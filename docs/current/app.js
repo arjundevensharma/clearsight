@@ -1,6 +1,7 @@
 import {
   CVD_MODES,
   formatBytes,
+  rgbToHex,
   evaluateContrast,
   calculateImpactPercent,
   parseHexColor,
@@ -29,6 +30,9 @@ const CONTACT_SHEET_LABEL_HEIGHT = 44;
 const AA_THRESHOLD_DEFAULT = 4.5;
 const AA_THRESHOLD_LARGE_TEXT = 3;
 const AAA_THRESHOLD_DEFAULT = 7;
+const COLOR_PICKER_TARGET_TEXT = 'text';
+const COLOR_PICKER_TARGET_BACKGROUND = 'background';
+const COLOR_PICKER_SOURCE_CLASS = 'is-picking-color';
 
 const state = {
   sourceImage: null,
@@ -43,6 +47,7 @@ const state = {
   simulationSeverityPercent: SIMULATION_SEVERITY_DEFAULT_PERCENT,
   pendingSeverityRerender: false,
   currentContrastAaThreshold: AA_THRESHOLD_DEFAULT,
+  activeColorPickerTarget: null,
 };
 
 let simulationSeverityRerenderTimer = null;
@@ -87,6 +92,8 @@ const dom = {
   contrastTextHex: document.getElementById('contrastTextHex'),
   contrastBgHex: document.getElementById('contrastBgHex'),
   contrastLargeText: document.getElementById('contrastLargeText'),
+  pickTextColorBtn: document.getElementById('pickTextColorBtn'),
+  pickBgColorBtn: document.getElementById('pickBgColorBtn'),
   imageDropzone: document.getElementById('imageDropzone'),
   contrastOut: document.getElementById('contrastOut'),
   contrastBtn: document.getElementById('contrastBtn'),
@@ -344,6 +351,100 @@ function isTypingTarget(element) {
   );
 }
 
+function setColorPickerTarget(target) {
+  const sourceCanvasClass = dom.sourceCanvas?.classList;
+  if (sourceCanvasClass) {
+    if (target) {
+      sourceCanvasClass.add(COLOR_PICKER_SOURCE_CLASS);
+    } else {
+      sourceCanvasClass.remove(COLOR_PICKER_SOURCE_CLASS);
+    }
+  }
+
+  state.activeColorPickerTarget = target;
+
+  if (dom.pickTextColorBtn) {
+    dom.pickTextColorBtn.setAttribute('aria-pressed', target === COLOR_PICKER_TARGET_TEXT ? 'true' : 'false');
+  }
+  if (dom.pickBgColorBtn) {
+    dom.pickBgColorBtn.setAttribute('aria-pressed', target === COLOR_PICKER_TARGET_BACKGROUND ? 'true' : 'false');
+  }
+
+  if (!target) {
+    dom.pickTextColorBtn?.classList?.remove('is-active');
+    dom.pickBgColorBtn?.classList?.remove('is-active');
+    return;
+  }
+
+  const label =
+    target === COLOR_PICKER_TARGET_TEXT ? 'text color' : 'background color';
+  setMessage(`Color picker enabled: click source image for ${label}.`, 'info');
+  if (target === COLOR_PICKER_TARGET_TEXT) {
+    dom.pickTextColorBtn?.classList?.add('is-active');
+  } else {
+    dom.pickBgColorBtn?.classList?.add('is-active');
+  }
+}
+
+function startColorPicker(target) {
+  if (!state.hasRenderedSource) {
+    setMessage('Render the source image first before picking colors.', 'error');
+    return;
+  }
+
+  const nextTarget = state.activeColorPickerTarget === target ? null : target;
+  setColorPickerTarget(nextTarget);
+}
+
+function clearColorPicker() {
+  if (!state.activeColorPickerTarget) {
+    return;
+  }
+  setColorPickerTarget(null);
+}
+
+function setContrastColor(target, hexColor) {
+  if (!hexColor) {
+    return;
+  }
+  if (target === COLOR_PICKER_TARGET_TEXT) {
+    dom.contrastText.value = hexColor;
+    dom.contrastTextHex.value = hexColor.toUpperCase();
+    return;
+  }
+
+  dom.contrastBg.value = hexColor;
+  dom.contrastBgHex.value = hexColor.toUpperCase();
+}
+
+function getSourceCanvasPixelColor(event) {
+  if (!state.sourceImageData || !dom.sourceCanvas) {
+    return null;
+  }
+
+  const rect = dom.sourceCanvas.getBoundingClientRect();
+  const scaleX = dom.sourceCanvas.width / rect.width;
+  const scaleY = dom.sourceCanvas.height / rect.height;
+  const x = Math.floor((event.clientX - rect.left) * scaleX);
+  const y = Math.floor((event.clientY - rect.top) * scaleY);
+
+  if (x < 0 || y < 0 || x >= dom.sourceCanvas.width || y >= dom.sourceCanvas.height) {
+    return null;
+  }
+
+  const index = (y * dom.sourceCanvas.width + x) * 4;
+  const data = state.sourceImageData.data;
+  if (!data || index + 2 >= data.length) {
+    return null;
+  }
+
+  return rgbToHex({
+    r: data[index],
+    g: data[index + 1],
+    b: data[index + 2],
+  });
+}
+
 function runIfAvailable(button, actionName, action) {
   if (!button) {
     setMessage(`${actionName} is unavailable.`, 'error');
@@ -364,9 +465,16 @@ function runKeyboardShortcut(event) {
 
   const key = event.key.toLowerCase();
 
-  if (key === 'escape' && !dom.previewModal?.hidden) {
-    closePreviewModal();
-    return;
+  if (key === 'escape') {
+    if (!dom.previewModal?.hidden) {
+      closePreviewModal();
+      return;
+    }
+    if (state.activeColorPickerTarget) {
+      clearColorPicker();
+      setMessage('Color picker canceled.', 'info');
+      return;
+    }
   }
 
   if (!dom.previewModal?.hidden && event.key === 'Tab') {
@@ -388,6 +496,8 @@ function runKeyboardShortcut(event) {
     d: () => runIfAvailable(dom.demoDashboard, 'Load demo dashboard', () => dom.demoDashboard.click()),
     c: () => runIfAvailable(dom.contrastBtn, 'Contrast check', () => dom.contrastBtn.click()),
     a: () => runIfAvailable(dom.suggestBtn, 'Palette suggestion', () => dom.suggestBtn.click()),
+    t: () => startColorPicker(COLOR_PICKER_TARGET_TEXT),
+    b: () => startColorPicker(COLOR_PICKER_TARGET_BACKGROUND),
   };
 
   if (!shortcutActions[key]) {
@@ -569,6 +679,7 @@ function clearWorkspace({ notify = true } = {}) {
   state.lastContrastResult = null;
   state.lastSuggestionPairs = [];
   state.currentContrastAaThreshold = AA_THRESHOLD_DEFAULT;
+  clearColorPicker();
   state.pendingSeverityRerender = false;
   if (simulationSeverityRerenderTimer) {
     clearTimeout(simulationSeverityRerenderTimer);
@@ -1346,6 +1457,7 @@ async function renderAll() {
 
   state.isRendering = true;
   state.hasRenderedSource = false;
+  clearColorPicker();
   markSimulationCardsPending();
   setSimPlaceholderVisible(false);
 
@@ -2156,11 +2268,42 @@ function init() {
   dom.contrastBg.addEventListener('change', renderContrastResult);
   if (dom.contrastLargeText) {
     dom.contrastLargeText.checked = false;
-    dom.contrastLargeText.addEventListener('change', () => {
-      if (state.lastContrastResult) {
-        renderContrastResult();
-      }
-    });
+  dom.contrastLargeText.addEventListener('change', () => {
+    if (state.lastContrastResult) {
+      renderContrastResult();
+    }
+  });
+
+  dom.pickTextColorBtn?.addEventListener('click', () => startColorPicker(COLOR_PICKER_TARGET_TEXT));
+  dom.pickBgColorBtn?.addEventListener('click', () =>
+    startColorPicker(COLOR_PICKER_TARGET_BACKGROUND),
+  );
+
+  dom.sourceCanvas.addEventListener('click', (event) => {
+    if (!state.activeColorPickerTarget) {
+      return;
+    }
+    event.preventDefault();
+    const pickedColor = getSourceCanvasPixelColor(event);
+    if (!pickedColor) {
+      return;
+    }
+
+    const normalized = normalizeHexInput(pickedColor);
+    if (!normalized) {
+      setMessage('Picked color could not be parsed.', 'error');
+      return;
+    }
+
+    setContrastColor(state.activeColorPickerTarget, normalized);
+    clearContrastValidation();
+    renderContrastResult();
+    setMessage(
+      `Picked ${state.activeColorPickerTarget === COLOR_PICKER_TARGET_TEXT ? 'text' : 'background'} color: ${normalized.toUpperCase()}.`,
+      'success',
+    );
+    clearColorPicker();
+  });
   }
 
   window.addEventListener('keydown', (event) => {

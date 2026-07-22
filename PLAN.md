@@ -32,6 +32,7 @@ The project is intentionally scoped for a one-day build:
 ### Nice-to-have
 9. Instructional demo script links and screenshot checklist for Devpost submission.
 10. Lightweight export controls for generated results (downloadable previews).
+11. Add source-image color picker controls for direct contrast text/background sampling.
 
 ## Session checkpoint (2026-07-22)
 - [x] Add simulation impact ranking to make high-risk vision modes immediately visible after render.
@@ -52,6 +53,7 @@ The project is intentionally scoped for a one-day build:
 - [x] Add one-click top-impact export pack for source + highest-impact simulations with a compact contact sheet.
 - [x] Add inspectable full-size simulation preview modal with direct download for focused judging review.
 - [x] Make WCAG contrast checker context-aware with large-text AA threshold support (3:1) and align suggestions/reporting output.
+- [x] Add source-image color picker controls for direct contrast text/background sampling from the rendered source.
 
 ## Architecture
 ### File layout

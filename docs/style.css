@@ -674,6 +674,23 @@ kbd {
   font-weight: 600;
 }
 
+.color-pick-actions {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.color-picker-btn {
+  background: #0f172a;
+  padding-inline: 0.7rem;
+}
+
+.color-picker-btn[aria-pressed='true'],
+.color-picker-btn.is-active {
+  background: var(--accent);
+}
+
 .input-row {
   display: flex;
   gap: 0.55rem;
@@ -712,6 +729,12 @@ input[type='text'] {
   padding: 0.4rem 0.6rem;
   font-size: 0.95rem;
   text-transform: uppercase;
+}
+
+.source-canvas.is-picking-color {
+  outline: 3px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  outline-offset: 2px;
+  cursor: crosshair;
 }
 
 .contrast-output {

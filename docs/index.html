@@ -80,24 +80,32 @@
       <section class="card" aria-labelledby="contrast-title">
         <h2 id="contrast-title">4) WCAG contrast checker</h2>
         <div class="contrast-form">
-          <div class="color-control">
-            <label for="contrastText">Text color</label>
-            <div class="input-row">
-              <input id="contrastText" type="color" value="#0F172A" />
-              <input id="contrastTextHex" type="text" value="#0F172A" maxlength="7" />
-            </div>
+        <div class="color-control">
+          <label for="contrastText">Text color</label>
+          <div class="input-row">
+            <input id="contrastText" type="color" value="#0F172A" />
+            <input id="contrastTextHex" type="text" value="#0F172A" maxlength="7" />
           </div>
-          <div class="color-control">
-            <label for="contrastBg">Background color</label>
-            <div class="input-row">
-              <input id="contrastBg" type="color" value="#FFFFFF" />
-              <input id="contrastBgHex" type="text" value="#FFFFFF" maxlength="7" />
-            </div>
+        </div>
+        <div class="color-control">
+          <label for="contrastBg">Background color</label>
+          <div class="input-row">
+            <input id="contrastBg" type="color" value="#FFFFFF" />
+            <input id="contrastBgHex" type="text" value="#FFFFFF" maxlength="7" />
           </div>
-          <label class="contrast-size-control">
-            <input id="contrastLargeText" type="checkbox" />
-            <span>Treat as large text (AA target 3:1)</span>
-          </label>
+        </div>
+        <div class="color-pick-actions" role="group" aria-label="Pick colors from source image">
+          <button id="pickTextColorBtn" type="button" class="tiny-btn color-picker-btn" aria-pressed="false">
+            Pick text color
+          </button>
+          <button id="pickBgColorBtn" type="button" class="tiny-btn color-picker-btn" aria-pressed="false">
+            Pick background color
+          </button>
+        </div>
+        <label class="contrast-size-control">
+          <input id="contrastLargeText" type="checkbox" />
+          <span>Treat as large text (AA target 3:1)</span>
+        </label>
         </div>
         <p id="contrastValidation" class="field-error" role="status" aria-live="polite"></p>
         <div class="button-row">
