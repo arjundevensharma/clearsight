@@ -34,6 +34,8 @@ const state = {
   isRendering: false,
   hasRenderedSource: false,
   modeImpacts: [],
+  lastContrastResult: null,
+  lastSuggestionPairs: [],
 };
 
 const cvdModes = CVD_MODES.filter((mode) => mode.id !== 'normal');
@@ -62,6 +64,7 @@ const dom = {
   downloadSourceBtn: document.getElementById('downloadSourceBtn'),
   downloadAllBtn: document.getElementById('downloadAllBtn'),
   downloadContactBtn: document.getElementById('downloadContactBtn'),
+  downloadReportBtn: document.getElementById('downloadReportBtn'),
   message: document.getElementById('message'),
   sourceCanvas: document.getElementById('sourceCanvas'),
   sourceInfo: document.getElementById('sourceInfo'),
@@ -240,6 +243,9 @@ function setImageControlsEnabled(enabled) {
   if (dom.downloadContactBtn) {
     dom.downloadContactBtn.disabled = !enabled || !state.hasRenderedSource;
   }
+  if (dom.downloadReportBtn) {
+    dom.downloadReportBtn.disabled = !enabled || !state.hasRenderedSource;
+  }
 }
 
 function setSimPlaceholderVisible(visible) {
@@ -392,6 +398,19 @@ function downloadCanvasAsImage(canvas, filename) {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+}
+
+function downloadTextFile(content, filename, mimeType = 'text/plain;charset=utf-8;') {
+  const blob = new Blob([content], { type: mimeType });
+  const fileUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = fileUrl;
+  link.download = filename;
+  link.rel = 'noopener';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(fileUrl);
 }
 
 function createModeCard(mode) {
@@ -1120,12 +1139,101 @@ function downloadContactSheet() {
   }
 }
 
+function buildAccessibilityReport() {
+  const simulationImpacts = [...state.modeImpacts]
+    .map((entry) => ({
+      id: entry.modeId,
+      label: entry.label,
+      impactPercent:
+        typeof entry.impactPercent === 'number' ? Number(entry.impactPercent.toFixed(2)) : null,
+      impactLevel: entry.impactLevel || 'neutral',
+    }))
+    .sort((a, b) => {
+      const aHasImpact = typeof a.impactPercent === 'number';
+      const bHasImpact = typeof b.impactPercent === 'number';
+      if (aHasImpact && bHasImpact) {
+        if (a.impactPercent !== b.impactPercent) {
+          return b.impactPercent - a.impactPercent;
+        }
+      }
+      if (aHasImpact) {
+        return -1;
+      }
+      if (bHasImpact) {
+        return 1;
+      }
+      return 0;
+    });
+
+  const topImpact = simulationImpacts.find((entry) => typeof entry.impactPercent === 'number') || null;
+  const contrastText = (dom.contrastTextHex?.value || dom.contrastText?.value || '#0F172A').toUpperCase();
+  const contrastBg = (dom.contrastBgHex?.value || dom.contrastBg?.value || '#FFFFFF').toUpperCase();
+
+  return {
+    generatedAt: new Date().toISOString(),
+    source: {
+      fileName: state.sourceName,
+      renderedSize: {
+        width: state.renderSize.width,
+        height: state.renderSize.height,
+      },
+      hasRenderedSource: Boolean(state.hasRenderedSource),
+    },
+    simulations: simulationImpacts,
+    topImpactMode: topImpact,
+    contrast: {
+      text: contrastText,
+      background: contrastBg,
+      lastChecked: state.lastContrastResult
+        ? {
+            ratio: Number(state.lastContrastResult.ratio.toFixed(3)),
+            passesAA: state.lastContrastResult.passesAA,
+            passesAAA: state.lastContrastResult.passesAAA,
+            passesLAA: state.lastContrastResult.passesLAA,
+          }
+        : null,
+    },
+    suggestions: Array.isArray(state.lastSuggestionPairs)
+      ? state.lastSuggestionPairs.slice(0, 8).map((pair) => ({
+          text: pair.text.toUpperCase(),
+          background: pair.background.toUpperCase(),
+          ratio: Number(pair.ratio.toFixed(3)),
+        }))
+      : [],
+  };
+}
+
+function downloadAccessibilityReport() {
+  if (state.isRendering) {
+    setMessage('Please wait for rendering to finish before exporting the report.', 'info');
+    return;
+  }
+  if (!state.hasRenderedSource) {
+    setMessage('Render the source first before generating an accessibility report.', 'error');
+    return;
+  }
+  if (!state.modeImpacts.length) {
+    setMessage('Render simulations first before generating an accessibility report.', 'error');
+    return;
+  }
+
+  const report = buildAccessibilityReport();
+  const filename = `${makeExportFileName('accessibility-report')}.json`;
+  downloadTextFile(
+    JSON.stringify(report, null, 2),
+    filename,
+    'application/json;charset=utf-8',
+  );
+  setMessage(`Downloaded accessibility report (${report.simulations.length} simulations) as ${filename}.`, 'success');
+}
+
 function renderContrastResult() {
   clearContrastValidation();
   try {
     const { text, background } = resolveContrastInputs();
     const result = evaluateContrast(text, background);
     const ratio = result.ratio.toFixed(2);
+    state.lastContrastResult = result;
     dom.contrastOut.innerHTML = `
       <span>Contrast: <strong>${ratio}:1</strong></span>
       <span>AA: <strong>${result.passesAA ? 'PASS' : 'FAIL'}</strong></span>
@@ -1137,6 +1245,7 @@ function renderContrastResult() {
   } catch (error) {
     dom.contrastOut.textContent = error.message;
     setContrastValidation(error.message);
+    state.lastContrastResult = null;
     setMessage(error.message, 'error');
     return null;
   }
@@ -1158,6 +1267,7 @@ function renderSuggestions() {
   try {
     suggestions = suggestAccessiblePairs(dom.contrastTextHex.value, dom.contrastBgHex.value, 4.5, 4);
   } catch (error) {
+    state.lastSuggestionPairs = [];
     setMessage(error.message, 'error');
     return;
   }
@@ -1169,8 +1279,11 @@ function renderSuggestions() {
     empty.className = 'muted';
     empty.textContent = 'No replacement pairs met the target contrast threshold.';
     dom.suggestionWrap.appendChild(empty);
+    state.lastSuggestionPairs = [];
     return;
   }
+
+  state.lastSuggestionPairs = suggestions;
 
   suggestions.forEach((pair) => {
     const card = document.createElement('article');
@@ -1255,6 +1368,8 @@ function readImageAndRender(file) {
       state.sourceImageData = null;
       state.modeImpacts = [];
       state.hasRenderedSource = false;
+      state.lastContrastResult = null;
+      state.lastSuggestionPairs = [];
       markSimulationCardsPending();
       setSimPlaceholderVisible(true);
       dom.exportNote.textContent = '';
@@ -1272,6 +1387,8 @@ function loadSample(type) {
   try {
     state.hasRenderedSource = false;
     state.modeImpacts = [];
+    state.lastContrastResult = null;
+    state.lastSuggestionPairs = [];
     state.sourceImageData = null;
     state.sourceImage = createDemoImage(type);
     state.sourceName = `${type}-sample.png`;
@@ -1373,6 +1490,7 @@ function init() {
   });
   dom.downloadAllBtn.addEventListener('click', downloadAllPreviews);
   dom.downloadContactBtn?.addEventListener('click', downloadContactSheet);
+  dom.downloadReportBtn?.addEventListener('click', downloadAccessibilityReport);
   dom.contrastBtn.addEventListener('click', renderContrastResult);
   dom.suggestBtn.addEventListener('click', renderSuggestions);
   dom.copyDemoScriptBtn?.addEventListener('click', () => {
