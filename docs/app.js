@@ -15,13 +15,19 @@ const MAX_SOURCE_DIMENSION = 5000;
 const SUPPORTED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.avif'];
 
 const HEX_HEX_RE = /^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+const IMPACT_LEVEL = {
+  high: 18,
+  medium: 10,
+};
 
 const state = {
   sourceImage: null,
   sourceName: '',
   renderSize: { width: 0, height: 0 },
+  sourceImageData: null,
   isRendering: false,
   hasRenderedSource: false,
+  modeImpacts: [],
 };
 
 const cvdModes = CVD_MODES.filter((mode) => mode.id !== 'normal');
@@ -62,11 +68,83 @@ const dom = {
   suggestBtn: document.getElementById('suggestBtn'),
   suggestionWrap: document.getElementById('suggestions'),
   simPlaceholder: document.getElementById('simEmptyState'),
+  impactSummary: document.getElementById('impactSummary'),
   contrastValidation: document.getElementById('contrastValidation'),
   copyDemoScriptBtn: document.getElementById('copyDemoScriptBtn'),
   copyChecklistBtn: document.getElementById('copyChecklistBtn'),
   demoCopyStatus: document.getElementById('demoCopyStatus'),
 };
+
+function getImpactLevel(impactPercent) {
+  if (impactPercent === null || Number.isNaN(impactPercent)) {
+    return 'neutral';
+  }
+  if (impactPercent >= IMPACT_LEVEL.high) {
+    return 'high';
+  }
+  if (impactPercent >= IMPACT_LEVEL.medium) {
+    return 'medium';
+  }
+  return 'low';
+}
+
+function calculateImpactPercent(baseData, candidateData) {
+  if (!baseData || !candidateData || baseData.length !== candidateData.length) {
+    return null;
+  }
+
+  let diff = 0;
+  const len = baseData.length;
+  const rgbChannelCount = (len / 4) * 3;
+
+  if (rgbChannelCount <= 0) {
+    return 0;
+  }
+
+  for (let i = 0; i < len; i += 4) {
+    diff += Math.abs(baseData[i] - candidateData[i]);
+    diff += Math.abs(baseData[i + 1] - candidateData[i + 1]);
+    diff += Math.abs(baseData[i + 2] - candidateData[i + 2]);
+  }
+
+  return (diff / (rgbChannelCount * 255)) * 100;
+}
+
+function setImpactSummary(stats = []) {
+  if (!dom.impactSummary) {
+    return;
+  }
+
+  if (!stats.length) {
+    dom.impactSummary.innerHTML = '<p>Run simulations to reveal visual-impact ranking.</p>';
+    return;
+  }
+
+  const withImpact = stats.filter((entry) => typeof entry.impactPercent === 'number');
+  if (!withImpact.length) {
+    dom.impactSummary.innerHTML =
+      '<p>Simulations rendered. Impact metrics will appear when source statistics are available.</p>';
+    return;
+  }
+
+  const ordered = [...withImpact].sort((a, b) => b.impactPercent - a.impactPercent);
+  const lead = ordered[0];
+  const chips = ordered
+    .slice(0, 5)
+    .map(
+      (entry) =>
+        `<span class="impact-pill impact-${entry.impactLevel}">
+          <span>${entry.label}</span>
+          <strong>${entry.impactPercent.toFixed(1)}%</strong>
+        </span>`,
+    )
+    .join('');
+
+  dom.impactSummary.innerHTML = `
+    <p>High-impact order: ${lead.label} leads at ${lead.impactPercent.toFixed(1)}%.</p>
+    <div class="impact-pill-row">${chips}</div>
+  `;
+}
 
 function setMessage(text, type = 'info') {
   dom.message.textContent = text;
@@ -155,6 +233,7 @@ function markSimulationCardsPending() {
   cards.forEach((card) => {
     const status = card.querySelector('.sim-status');
     const exportBtn = card.querySelector('.tiny-btn');
+    card.classList.remove('impact-high', 'impact-medium', 'impact-low');
     if (status) {
       status.textContent = 'Waiting for source';
       status.className = 'sim-status';
@@ -486,17 +565,20 @@ function resolveContrastInputs() {
 async function renderMode(mode, sourceSize) {
   const card = dom.simGrid.querySelector(`[data-mode="${mode.id}"]`);
   if (!card) {
-    return;
+    return null;
   }
 
   const canvas = card.querySelector('.sim-canvas');
   const status = card.querySelector('.sim-status');
   const exportBtn = card.querySelector('.tiny-btn');
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  let impactPercent = null;
+  let impactLevel = 'neutral';
 
   canvas.width = sourceSize.width;
   canvas.height = sourceSize.height;
   card.classList.remove('is-done', 'is-error');
+  card.classList.remove('impact-high', 'impact-medium', 'impact-low');
   status.textContent = 'Rendering...';
   status.className = 'sim-status loading';
   if (exportBtn) {
@@ -506,24 +588,46 @@ async function renderMode(mode, sourceSize) {
   try {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (mode.kind === 'matrix') {
-      ctx.drawImage(state.sourceImage, 0, 0, sourceSize.width, sourceSize.height);
-      const imageData = ctx.getImageData(0, 0, sourceSize.width, sourceSize.height);
-      transformImageDataWithMatrix(imageData, mode.matrix);
-      ctx.putImageData(imageData, 0, 0);
+      const sourceData = state.sourceImageData?.data;
+      const transformedData = sourceData
+        ? new ImageData(new Uint8ClampedArray(sourceData), sourceSize.width, sourceSize.height)
+        : null;
+
+      if (!transformedData) {
+        throw new Error('Missing source image data for matrix simulation.');
+      }
+
+      transformImageDataWithMatrix(transformedData, mode.matrix);
+      ctx.putImageData(transformedData, 0, 0);
+      impactPercent = calculateImpactPercent(sourceData, transformedData.data);
     } else if (mode.kind === 'filter') {
       ctx.filter = mode.filter;
       ctx.drawImage(state.sourceImage, 0, 0, sourceSize.width, sourceSize.height);
+      const filteredData = ctx.getImageData(0, 0, sourceSize.width, sourceSize.height);
+      impactPercent = calculateImpactPercent(state.sourceImageData?.data, filteredData.data);
       ctx.filter = 'none';
     } else {
       throw new Error('Unknown simulation mode type.');
     }
 
-    status.textContent = 'Done';
+    impactLevel = getImpactLevel(impactPercent);
+    if (impactLevel !== 'neutral') {
+      card.classList.add(`impact-${impactLevel}`);
+    }
+    status.textContent =
+      impactPercent === null ? 'Done' : `Done · ${impactPercent.toFixed(1)}% pixel change`;
     status.className = 'sim-status done';
     card.classList.add('is-done');
     if (exportBtn) {
       exportBtn.disabled = false;
     }
+
+    return {
+      modeId: mode.id,
+      label: mode.label,
+      impactPercent,
+      impactLevel,
+    };
   } catch (error) {
     ctx.filter = 'none';
     status.textContent = error.message || 'Render failed';
@@ -532,6 +636,12 @@ async function renderMode(mode, sourceSize) {
     if (exportBtn) {
       exportBtn.disabled = true;
     }
+    return {
+      modeId: mode.id,
+      label: mode.label,
+      impactPercent: null,
+      impactLevel: 'neutral',
+    };
   }
 }
 
@@ -567,17 +677,35 @@ async function renderAll() {
     dom.sourceCanvas.height = sourceSize.height;
     sourceCtx.clearRect(0, 0, sourceSize.width, sourceSize.height);
     sourceCtx.drawImage(state.sourceImage, 0, 0, sourceSize.width, sourceSize.height);
+    state.sourceImageData = sourceCtx.getImageData(0, 0, sourceSize.width, sourceSize.height);
     state.hasRenderedSource = true;
     showSourceMeta(state.sourceName, sourceSize.width, sourceSize.height);
+    state.modeImpacts = [];
 
     for (const mode of allModes) {
       // eslint-disable-next-line no-await-in-loop
-      await renderMode(mode, sourceSize);
+      const result = await renderMode(mode, sourceSize);
+      if (result) {
+        state.modeImpacts.push(result);
+      }
     }
 
     setImageControlsEnabled(true);
     dom.processBtn.textContent = 'Render simulations';
-    setMessage('All simulations rendered.', 'success');
+    const sortedByImpact = [...state.modeImpacts]
+      .filter((entry) => typeof entry.impactPercent === 'number')
+      .sort((a, b) => b.impactPercent - a.impactPercent);
+    setImpactSummary(sortedByImpact);
+
+    const topImpact = sortedByImpact[0];
+    if (topImpact) {
+      setMessage(
+        `All simulations rendered. Highest impact: ${topImpact.label} (${topImpact.impactPercent.toFixed(1)}%).`,
+        'success',
+      );
+    } else {
+      setMessage('All simulations rendered.', 'success');
+    }
     dom.exportNote.textContent = 'Tip: download previews for quick submission screenshots.';
   } catch (error) {
     dom.processBtn.textContent = 'Render simulations';
@@ -585,6 +713,9 @@ async function renderAll() {
   } finally {
     state.isRendering = false;
     setImageControlsEnabled(Boolean(state.sourceImage));
+    if (!state.modeImpacts.length) {
+      setImpactSummary([]);
+    }
     setSimPlaceholderVisible(!state.hasRenderedSource);
   }
 }
@@ -766,6 +897,8 @@ function readImageAndRender(file) {
       state.sourceImage = image;
       state.sourceName = file.name || 'uploaded-image';
       state.renderSize = { width: 0, height: 0 };
+      state.sourceImageData = null;
+      state.modeImpacts = [];
       state.hasRenderedSource = false;
       markSimulationCardsPending();
       setSimPlaceholderVisible(true);
@@ -783,6 +916,8 @@ function readImageAndRender(file) {
 function loadSample(type) {
   try {
     state.hasRenderedSource = false;
+    state.modeImpacts = [];
+    state.sourceImageData = null;
     state.sourceImage = createDemoImage(type);
     state.sourceName = `${type}-sample.png`;
     setSimPlaceholderVisible(true);
@@ -803,6 +938,7 @@ function init() {
   setControlState(true);
   setDefaultSuggestionsState();
   setSimPlaceholderVisible(true);
+  setImpactSummary([]);
   clearDemoCopyStatus();
 
   dom.imageInput.addEventListener('change', (event) => {

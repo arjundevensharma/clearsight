@@ -218,6 +218,58 @@ button:hover:not(:disabled) {
   margin-top: 0.35rem;
 }
 
+.impact-summary {
+  margin: 0.4rem 0 0.6rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--ring);
+  border-radius: 10px;
+  background: #f8fafc;
+  min-height: 1.7rem;
+}
+
+.impact-summary p {
+  margin: 0 0 0.4rem;
+}
+
+.impact-pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.impact-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  border: 1px solid var(--ring);
+  padding: 0.2rem 0.55rem;
+  font-size: 0.8rem;
+  background: #ffffff;
+}
+
+.impact-pill strong {
+  font-size: 0.84rem;
+}
+
+.impact-pill.impact-high {
+  border-color: color-mix(in srgb, var(--bad) 40%, white);
+  background: color-mix(in srgb, var(--bad) 10%, white);
+  color: #7f1d1d;
+}
+
+.impact-pill.impact-medium {
+  border-color: color-mix(in srgb, var(--warn) 45%, white);
+  background: color-mix(in srgb, var(--warn) 12%, white);
+  color: #7c2d12;
+}
+
+.impact-pill.impact-low {
+  border-color: color-mix(in srgb, var(--good) 40%, white);
+  background: color-mix(in srgb, var(--good) 12%, white);
+  color: #14532d;
+}
+
 .sim-card {
   margin: 0;
   border: 1px solid var(--ring);
@@ -274,6 +326,18 @@ button:hover:not(:disabled) {
 
 .sim-card.is-error {
   border-color: color-mix(in srgb, var(--bad) 35%, var(--ring));
+}
+
+.sim-card.impact-high {
+  border-color: color-mix(in srgb, var(--bad) 45%, var(--ring));
+}
+
+.sim-card.impact-medium {
+  border-color: color-mix(in srgb, var(--warn) 40%, var(--ring));
+}
+
+.sim-card.impact-low {
+  border-color: color-mix(in srgb, var(--good) 40%, var(--ring));
 }
 
 .sim-canvas {

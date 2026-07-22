@@ -33,6 +33,11 @@ The project is intentionally scoped for a one-day build:
 9. Instructional demo script links and screenshot checklist for Devpost submission.
 10. Lightweight export controls for generated results (downloadable previews).
 
+## Session checkpoint (2026-07-22)
+- [x] Add simulation impact ranking to make high-risk vision modes immediately visible after render.
+- [ ] Add source-vs-simulated slider comparison inside each simulation card.
+- [ ] Add unit/integration coverage for impact metric calculations.
+
 ## Architecture
 ### File layout
 - `index.html` / `style.css` / `app.js` are deployed in `docs/` for GitHub Pages.
