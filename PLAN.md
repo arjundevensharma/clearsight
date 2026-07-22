@@ -36,7 +36,7 @@ The project is intentionally scoped for a one-day build:
 ## Session checkpoint (2026-07-22)
 - [x] Add simulation impact ranking to make high-risk vision modes immediately visible after render.
 - [x] Add source-vs-simulated slider comparison inside each simulation card.
-- [ ] Add unit/integration coverage for impact metric calculations.
+- [x] Add unit/integration coverage for impact metric calculations.
 
 ## Architecture
 ### File layout

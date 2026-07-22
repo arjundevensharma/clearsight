@@ -6,6 +6,7 @@ import {
   contrastRatio,
   relativeLuminance,
   formatBytes,
+  calculateImpactPercent,
   getDemoScriptText,
   getSubmissionChecklistText,
   suggestAccessiblePairs,
@@ -61,6 +62,23 @@ test('evaluateContrast exposes AA and AAA states', () => {
 test('evaluateContrast validates thresholds', () => {
   assert.throws(() => evaluateContrast(parseHexColor('#000'), parseHexColor('#fff'), -1), /AA threshold/i);
   assert.throws(() => evaluateContrast(parseHexColor('#000'), parseHexColor('#fff'), 4.5, 4.1), /AAA threshold/i);
+});
+
+test('calculateImpactPercent measures pixel delta and normalizes to percent', () => {
+  const base = new Uint8ClampedArray([0, 0, 0, 255, 255, 255, 255, 128]);
+  const candidate = new Uint8ClampedArray([255, 0, 0, 255, 0, 255, 0, 64]);
+  const value = calculateImpactPercent(base, candidate);
+  assert.equal(value.toFixed(2), '50.00');
+});
+
+test('calculateImpactPercent handles no color channels by returning zero', () => {
+  assert.equal(calculateImpactPercent(new Uint8ClampedArray([]), new Uint8ClampedArray([])), 0);
+});
+
+test('calculateImpactPercent returns null when image buffers do not align', () => {
+  const base = new Uint8ClampedArray([0, 0, 0, 255]);
+  const candidate = new Uint8ClampedArray([0, 0, 0]);
+  assert.equal(calculateImpactPercent(base, candidate), null);
 });
 
 test('suggestAccessiblePairs returns usable color combinations', () => {

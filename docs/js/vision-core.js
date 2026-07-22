@@ -303,6 +303,28 @@ export function evaluateContrast(textColor, backgroundColor, aaThreshold = 4.5, 
   };
 }
 
+export function calculateImpactPercent(baseData, candidateData) {
+  if (!baseData || !candidateData || baseData.length !== candidateData.length) {
+    return null;
+  }
+
+  let diff = 0;
+  const len = baseData.length;
+  const rgbChannelCount = (len / 4) * 3;
+
+  if (rgbChannelCount <= 0) {
+    return 0;
+  }
+
+  for (let i = 0; i < len; i += 4) {
+    diff += Math.abs(baseData[i] - candidateData[i]);
+    diff += Math.abs(baseData[i + 1] - candidateData[i + 1]);
+    diff += Math.abs(baseData[i + 2] - candidateData[i + 2]);
+  }
+
+  return (diff / (rgbChannelCount * 255)) * 100;
+}
+
 const safeTextCandidates = [
   '#0f172a',
   '#0f766e',
