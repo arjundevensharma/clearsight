@@ -74,6 +74,26 @@ h3 {
   letter-spacing: -0.02em;
 }
 
+.onboarding {
+  border-color: #c7d2fe;
+  background: linear-gradient(135deg, #eef2ff, #f5f3ff);
+}
+
+.onboarding h2 {
+  margin-top: 0;
+}
+
+.onboarding-steps {
+  margin: 0.45rem 0 0.65rem 1.3rem;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.onboarding-hint {
+  margin: 0;
+}
+
 .message {
   border-radius: 10px;
   padding: 0.65rem 0.75rem;

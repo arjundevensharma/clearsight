@@ -40,6 +40,34 @@ This led to an all-client-side design: no upload chain, no backend dependency, n
 
 All image processing uses canvas operations in-browser, and no image bytes are uploaded to any server.
 
+## Fast 60-second workflow
+
+Use this sequence for a clean, demo-ready run:
+
+1. Load a sample (`Load demo UI` or `Load demo dashboard`) or upload your own screenshot.
+2. Click `Render simulations`.
+3. Review the ranked cards and open the highest-impact preview first.
+4. Run `Check contrast`, then click `Suggest accessible palette` to apply one and re-check instantly.
+5. Use `Download submission package` for all outputs the judge needs in one click.
+
+Keyboard shortcuts for speed:
+
+- `R` render simulations
+- `U` load demo UI
+- `D` load demo dashboard
+- `C` check contrast
+- `A` generate suggestions
+- `P` inspect the highest-impact simulation
+- `Esc` close preview / cancel color picker
+
+Expected output for submission:
+
+- Source preview
+- Simulation previews for all modes
+- Ranked contact sheet (`Download contact sheet`)
+- Accessibility report (`Download accessibility report`)
+- Optional full package (`Download submission package`)
+
 ## Tech stack
 
 - HTML/CSS/JavaScript static frontend.

@@ -56,6 +56,7 @@ The project is intentionally scoped for a one-day build:
 - [x] Add source-image color picker controls for direct contrast text/background sampling from the rendered source.
 - [x] Add quick-access top-impact simulations filter toggle for rapid high-risk review during demos.
 - [x] Add one-click highest-impact preview action (button + keyboard shortcut) for immediate demo triage.
+- [x] Add an in-app judge-focused onboarding workflow panel and mirrored README execution checklist for faster demo clarity.
 
 ## Architecture
 ### File layout
