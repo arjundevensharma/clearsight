@@ -83,6 +83,64 @@ export const CVD_MODES = [
 
 const clamp = (value) => Math.max(0, Math.min(255, Math.round(value)));
 
+const DEMO_SCRIPT_LINES = [
+  'ClearSight — 1-3 Minute Demo Script',
+  '',
+  '0:00-0:15 | Problem framing',
+  'Show: teams and users often miss accessibility gaps in contrast and color vision.',
+  'Say: ClearSight is a browser-first simulator for seeing UI as users with vision differences see it.',
+  '',
+  '0:15-0:40 | Privacy and flow',
+  'Show: upload/ demo controls and mention "no file leaves your browser."',
+  'Walk through: built-in demos and source upload are one-click.',
+  '',
+  '0:40-1:25 | Live simulator',
+  'Show: source preview then simulation strip:',
+  'Protanopia, Deuteranopia, Tritanopia, Protanomaly, Deuteranomaly, Tritanomaly, Achromatopsia,',
+  'Low Vision: Blur, and Low Vision: Low Contrast.',
+  '',
+  '1:25-2:05 | Contrast checker',
+  'Use three-six digit hex inputs, run check, and point out AA/AAA pass states.',
+  '',
+  '2:05-2:35 | Accessible alternatives',
+  'Open suggestions, apply one pair, and rerun contrast check.',
+  '',
+  '2:35-3:00 | Close',
+  'ClearSight gives fast visual empathy + concrete fixes with offline, client-side workflows.',
+];
+
+const SUBMISSION_CHECKLIST_LINES = [
+  'ClearSight submission image gallery checklist',
+  '',
+  'Capture these screenshots for Devpost Image gallery:',
+  '1. source-original.png',
+  '2. sim-protanopia.png',
+  '3. sim-deuteranopia.png',
+  '4. sim-tritanopia.png',
+  '5. sim-achromatopsia.png',
+  '6. sim-low-vision-blur.png',
+  '7. sim-low-vision-contrast.png',
+  '8. contrast-checker-initial.png',
+  '9. contrast-suggestion-applied.png',
+];
+
+export function getDemoScriptText() {
+  return DEMO_SCRIPT_LINES.join('\n');
+}
+
+export function getSubmissionChecklistText() {
+  return SUBMISSION_CHECKLIST_LINES.join('\n');
+}
+
+function requireFinitePositiveNumber(value, label, min = Number.NEGATIVE_INFINITY) {
+  if (!Number.isFinite(value)) {
+    throw new Error(`${label} must be a finite number.`);
+  }
+  if (value < min) {
+    throw new Error(`${label} must be at least ${min}.`);
+  }
+}
+
 export function transformImageDataWithMatrix(imageData, matrix) {
   if (!imageData || !imageData.data || !matrix || !Array.isArray(matrix) || matrix.length !== 3) {
     throw new Error('Invalid image data or matrix provided for color transformation.');
@@ -170,6 +228,13 @@ export function contrastRatio(rgbA, rgbB) {
 }
 
 export function evaluateContrast(textColor, backgroundColor, aaThreshold = 4.5, aaaThreshold = 7) {
+  requireFinitePositiveNumber(aaThreshold, 'AA threshold', 0.1);
+  requireFinitePositiveNumber(aaaThreshold, 'AAA threshold', 0.1);
+
+  if (aaaThreshold < aaThreshold) {
+    throw new Error('AAA threshold must be greater than or equal to AA threshold.');
+  }
+
   const ratio = contrastRatio(textColor, backgroundColor);
   return {
     ratio,
@@ -214,6 +279,13 @@ function colorDistance(a, b) {
 }
 
 export function suggestAccessiblePairs(textHex, backgroundHex, targetRatio = 4.5, limit = 8) {
+  requireFinitePositiveNumber(targetRatio, 'Target contrast ratio', 1);
+
+  const safeLimit = Number(limit);
+  if (!Number.isFinite(safeLimit) || !Number.isInteger(safeLimit) || safeLimit <= 0) {
+    throw new Error('Suggestion limit must be a positive integer.');
+  }
+
   const baseText = parseHexColor(textHex);
   const baseBg = parseHexColor(backgroundHex);
 
@@ -257,5 +329,5 @@ export function suggestAccessiblePairs(textHex, backgroundHex, targetRatio = 4.5
     return b.ratio - a.ratio;
   });
 
-  return candidates.slice(0, limit);
+  return candidates.slice(0, safeLimit);
 }

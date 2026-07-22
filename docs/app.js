@@ -2,6 +2,8 @@ import {
   CVD_MODES,
   evaluateContrast,
   parseHexColor,
+  getDemoScriptText,
+  getSubmissionChecklistText,
   suggestAccessiblePairs,
   transformImageDataWithMatrix,
 } from './js/vision-core.js';
@@ -57,6 +59,9 @@ const dom = {
   suggestBtn: document.getElementById('suggestBtn'),
   suggestionWrap: document.getElementById('suggestions'),
   contrastValidation: document.getElementById('contrastValidation'),
+  copyDemoScriptBtn: document.getElementById('copyDemoScriptBtn'),
+  copyChecklistBtn: document.getElementById('copyChecklistBtn'),
+  demoCopyStatus: document.getElementById('demoCopyStatus'),
 };
 
 function setMessage(text, type = 'info') {
@@ -67,6 +72,57 @@ function setMessage(text, type = 'info') {
 function clearMessage() {
   dom.message.textContent = '';
   dom.message.dataset.type = '';
+}
+
+function setDemoCopyStatus(text) {
+  dom.demoCopyStatus.textContent = text;
+}
+
+function clearDemoCopyStatus() {
+  setDemoCopyStatus('');
+}
+
+async function copyTextToClipboard(text) {
+  if (!text) {
+    return false;
+  }
+
+  if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // fall back to textarea copy below
+    }
+  }
+
+  if (typeof document === 'undefined') {
+    return false;
+  }
+
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('aria-hidden', 'true');
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  textarea.style.pointerEvents = 'none';
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+
+  try {
+    return Boolean(document.execCommand('copy'));
+  } finally {
+    document.body.removeChild(textarea);
+  }
+}
+
+function setDefaultSuggestionsState() {
+  dom.suggestionWrap.innerHTML = '';
+  const placeholder = document.createElement('p');
+  placeholder.className = 'muted';
+  placeholder.textContent = 'Run a contrast check to generate accessible replacement pairs.';
+  dom.suggestionWrap.appendChild(placeholder);
 }
 
 function setContrastValidation(text) {
@@ -550,36 +606,13 @@ function renderContrastResult() {
 
 async function copyPalettePairToClipboard(pair) {
   const payload = `text: ${pair.text.toUpperCase()}\nbackground: ${pair.background.toUpperCase()}`;
-  if (typeof navigator === 'undefined') {
-    return false;
-  }
-
-  if (navigator.clipboard?.writeText) {
-    await navigator.clipboard.writeText(payload);
-    return true;
-  }
-
-  const textarea = document.createElement('textarea');
-  textarea.value = payload;
-  textarea.setAttribute('aria-hidden', 'true');
-  textarea.style.position = 'fixed';
-  textarea.style.opacity = '0';
-  textarea.style.pointerEvents = 'none';
-  document.body.appendChild(textarea);
-  textarea.focus();
-  textarea.select();
-
-  try {
-    const copied = document.execCommand('copy');
-    return Boolean(copied);
-  } finally {
-    document.body.removeChild(textarea);
-  }
+  return copyTextToClipboard(payload);
 }
 
 function renderSuggestions() {
   const result = renderContrastResult();
   if (!result) {
+    setDefaultSuggestionsState();
     return;
   }
 
@@ -657,6 +690,24 @@ function renderSuggestions() {
   setMessage(`Generated ${suggestions.length} accessible palette options.`, 'success');
 }
 
+async function copyDemoText(kind) {
+  const payload =
+    kind === 'checklist'
+      ? getSubmissionChecklistText()
+      : getDemoScriptText();
+
+  const copied = await copyTextToClipboard(payload);
+  if (!copied) {
+    setDemoCopyStatus('Clipboard copy is not supported in this browser. Highlight text manually if needed.');
+    return;
+  }
+  setDemoCopyStatus(
+    kind === 'checklist'
+      ? 'Devpost screenshot checklist copied.'
+      : 'Demo script outline copied.',
+  );
+}
+
 function readImageAndRender(file) {
   return withImageFromFile(file)
     .then((image) => {
@@ -690,6 +741,8 @@ function init() {
   renderModeCards();
   setImageControlsEnabled(false);
   setControlState(true);
+  setDefaultSuggestionsState();
+  clearDemoCopyStatus();
 
   dom.imageInput.addEventListener('change', (event) => {
     const file = event.target.files?.[0];
@@ -720,6 +773,14 @@ function init() {
   dom.downloadAllBtn.addEventListener('click', downloadAllPreviews);
   dom.contrastBtn.addEventListener('click', renderContrastResult);
   dom.suggestBtn.addEventListener('click', renderSuggestions);
+  dom.copyDemoScriptBtn?.addEventListener('click', () => {
+    clearDemoCopyStatus();
+    copyDemoText('script').catch(() => setDemoCopyStatus('Clipboard copy was interrupted.'));
+  });
+  dom.copyChecklistBtn?.addEventListener('click', () => {
+    clearDemoCopyStatus();
+    copyDemoText('checklist').catch(() => setDemoCopyStatus('Clipboard copy was interrupted.'));
+  });
 
   syncHexWithPicker(dom.contrastText, dom.contrastTextHex, 'Text');
   syncHexWithPicker(dom.contrastBg, dom.contrastBgHex, 'Background');

@@ -143,6 +143,35 @@ button:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 
+.link-btn {
+  border: 0;
+  padding: 0.6rem 0.95rem;
+  border-radius: 10px;
+  font-weight: 700;
+  background: #e2e8f0;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  transition: transform 120ms ease, background-color 120ms ease;
+}
+
+.link-btn:hover {
+  background: #cbd5e1;
+}
+
+.demo-list {
+  margin: 0.4rem 0 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+#demoCopyStatus {
+  min-height: 1.2rem;
+}
+
 .button-row {
   display: flex;
   flex-wrap: wrap;

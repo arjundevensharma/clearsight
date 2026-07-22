@@ -4,6 +4,8 @@ import {
   parseHexColor,
   rgbToHex,
   contrastRatio,
+  getDemoScriptText,
+  getSubmissionChecklistText,
   suggestAccessiblePairs,
   evaluateContrast,
   transformImageDataWithMatrix,
@@ -43,11 +45,28 @@ test('evaluateContrast exposes AA and AAA states', () => {
   assert.equal(result.passesLAA, true);
 });
 
+test('evaluateContrast validates thresholds', () => {
+  assert.throws(() => evaluateContrast(parseHexColor('#000'), parseHexColor('#fff'), -1), /AA threshold/i);
+  assert.throws(() => evaluateContrast(parseHexColor('#000'), parseHexColor('#fff'), 4.5, 4.1), /AAA threshold/i);
+});
+
 test('suggestAccessiblePairs returns usable color combinations', () => {
   const suggestions = suggestAccessiblePairs('#000000', '#ffffff');
   assert.ok(Array.isArray(suggestions));
   assert.ok(suggestions.length > 0);
   assert.ok(suggestions.every((pair) => pair.ratio >= 4.5 - 0.0001));
+});
+
+test('suggestAccessiblePairs validates parameters', () => {
+  assert.throws(() => suggestAccessiblePairs('#000', '#fff', 0.5), /Target contrast ratio/i);
+  assert.throws(() => suggestAccessiblePairs('#000', '#fff', 4.5, 0), /Suggestion limit/i);
+});
+
+test('demo helper text is bundled for copy actions', () => {
+  const demoText = getDemoScriptText();
+  const checklist = getSubmissionChecklistText();
+  assert.ok(demoText.includes('1-3 Minute Demo Script'));
+  assert.ok(checklist.includes('sim-protanopia.png'));
 });
 
 test('each CVD mode has a valid transform matrix', () => {

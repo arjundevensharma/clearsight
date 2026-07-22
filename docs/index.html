@@ -79,6 +79,24 @@
         <div id="contrastOut" class="contrast-output" aria-live="polite"></div>
         <div id="suggestions" class="suggestions"></div>
       </section>
+
+      <section class="card" aria-labelledby="demo-help-title">
+        <h2 id="demo-help-title">5) Demo script & screenshot checklist</h2>
+        <p class="muted">Use this panel for a quick 2-minute judge walkthrough or Devpost submission prep.</p>
+        <div class="button-row">
+          <a class="link-btn" href="./VIDEO_SCRIPT.md" target="_blank" rel="noopener noreferrer">Open full demo script</a>
+          <a class="link-btn" href="./SUBMISSION_SCREENSHOTS.md" target="_blank" rel="noopener noreferrer">Open screenshot checklist</a>
+          <button id="copyDemoScriptBtn" type="button">Copy demo script</button>
+          <button id="copyChecklistBtn" type="button">Copy screenshot checklist</button>
+        </div>
+        <p id="demoCopyStatus" class="muted" role="status" aria-live="polite"></p>
+        <ul class="demo-list">
+          <li>Load a demo image, then render all simulations.</li>
+          <li>Scan every simulation card for accessibility impact.</li>
+          <li>Run contrast check and generate palette suggestions.</li>
+          <li>Export useful views and apply the screenshot checklist.</li>
+        </ul>
+      </section>
     </main>
 
     <script type="module" src="./app.js"></script>
