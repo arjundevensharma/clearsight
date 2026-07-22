@@ -258,6 +258,7 @@ function markSimulationCardsPending() {
     const overlay = card.querySelector('.sim-overlay');
     const divider = card.querySelector('.sim-compare-divider');
     const compareValue = card.querySelector('.sim-compare-value');
+    const rank = card.querySelector('.sim-rank');
     card.classList.remove('impact-high', 'impact-medium', 'impact-low');
     if (status) {
       status.textContent = 'Waiting for source';
@@ -279,6 +280,73 @@ function markSimulationCardsPending() {
     if (compareValue) {
       compareValue.textContent = `${COMPARE_DEFAULT_PERCENT}%`;
     }
+    if (rank) {
+      rank.hidden = true;
+      rank.textContent = '';
+    }
+  });
+}
+
+function setSimCardRank(card, rankNumber) {
+  const rank = card.querySelector('.sim-rank');
+  if (!rank) {
+    return;
+  }
+
+  if (!Number.isFinite(rankNumber) || rankNumber <= 0) {
+    rank.hidden = true;
+    rank.textContent = '';
+    return;
+  }
+
+  rank.textContent = `#${rankNumber}`;
+  rank.hidden = false;
+}
+
+function reorderSimulationCardsByImpact(results = state.modeImpacts) {
+  const cards = [...dom.simGrid.querySelectorAll('.sim-card')];
+  const cardByMode = new Map(cards.map((card) => [card.dataset.mode, card]));
+
+  const ordered = results
+    .map((entry, index) => {
+      const card = cardByMode.get(entry.modeId);
+      if (!card) {
+        return null;
+      }
+      return {
+        ...entry,
+        index,
+        card,
+      };
+    })
+    .filter(Boolean);
+
+  ordered.sort((a, b) => {
+    const aHasImpact = typeof a.impactPercent === 'number';
+    const bHasImpact = typeof b.impactPercent === 'number';
+    if (aHasImpact && bHasImpact) {
+      if (a.impactPercent !== b.impactPercent) {
+        return b.impactPercent - a.impactPercent;
+      }
+      return a.index - b.index;
+    }
+    if (aHasImpact) {
+      return -1;
+    }
+    if (bHasImpact) {
+      return 1;
+    }
+    return a.index - b.index;
+  });
+
+  let rank = 1;
+  ordered.forEach((entry) => {
+    const hasImpact = typeof entry.impactPercent === 'number';
+    setSimCardRank(entry.card, hasImpact ? rank : null);
+    if (hasImpact) {
+      rank += 1;
+    }
+    dom.simGrid.append(entry.card);
   });
 }
 
@@ -334,9 +402,18 @@ function createModeCard(mode) {
   const header = document.createElement('div');
   header.className = 'sim-card-header';
 
+  const titleWrap = document.createElement('div');
+  titleWrap.className = 'sim-title-wrap';
+
   const title = document.createElement('figcaption');
   title.textContent = mode.label;
   title.className = 'sim-title';
+
+  const rank = document.createElement('span');
+  rank.className = 'sim-rank';
+  rank.hidden = true;
+
+  titleWrap.append(title, rank);
 
   const downloadBtn = document.createElement('button');
   downloadBtn.type = 'button';
@@ -358,7 +435,7 @@ function createModeCard(mode) {
     }
   });
 
-  header.append(title, downloadBtn);
+  header.append(titleWrap, downloadBtn);
 
   const compareWrap = document.createElement('div');
   compareWrap.className = 'sim-compare';
@@ -804,6 +881,7 @@ async function renderAll() {
     const sortedByImpact = [...state.modeImpacts]
       .filter((entry) => typeof entry.impactPercent === 'number')
       .sort((a, b) => b.impactPercent - a.impactPercent);
+    reorderSimulationCardsByImpact(state.modeImpacts);
     setImpactSummary(sortedByImpact);
 
     const topImpact = sortedByImpact[0];
