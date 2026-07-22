@@ -46,6 +46,7 @@ const state = {
 };
 
 let simulationSeverityRerenderTimer = null;
+let modalReturnFocusElement = null;
 
 const cvdModes = CVD_MODES.filter((mode) => mode.id !== 'normal');
 const extraModes = [
@@ -274,10 +275,127 @@ function closePreviewModal() {
   dom.previewModalImage.src = '';
   dom.previewModalImage.removeAttribute('src');
   document.body.style.overflow = '';
+
+  if (modalReturnFocusElement && typeof modalReturnFocusElement.focus === 'function') {
+    modalReturnFocusElement.focus();
+  }
+  modalReturnFocusElement = null;
 }
 
 function getModeImpactById(modeId) {
   return state.modeImpacts.find((entry) => entry.modeId === modeId);
+}
+
+function getModalFocusableElements() {
+  if (!dom.previewModalContent) {
+    return [];
+  }
+
+  return Array.from(
+    dom.previewModalContent.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+    ),
+  ).filter((element) => element instanceof HTMLElement && !element.disabled);
+}
+
+function focusFirstModalElement() {
+  const focusables = getModalFocusableElements();
+  const target = focusables[0] || dom.previewModalCloseBtn;
+  if (target) {
+    target.focus();
+  }
+}
+
+function trapPreviewModalFocus(event) {
+  if (!event || event.key !== 'Tab' || !dom.previewModal || dom.previewModal.hidden) {
+    return;
+  }
+
+  const focusables = getModalFocusableElements();
+  if (!focusables.length) {
+    event.preventDefault();
+    if (dom.previewModalCloseBtn) {
+      dom.previewModalCloseBtn.focus();
+    }
+    return;
+  }
+
+  const first = focusables[0];
+  const last = focusables[focusables.length - 1];
+  const current = document.activeElement;
+
+  if (event.shiftKey && current === first) {
+    event.preventDefault();
+    last.focus();
+    return;
+  }
+
+  if (!event.shiftKey && current === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+function isTypingTarget(element) {
+  return (
+    element instanceof HTMLElement &&
+    ['INPUT', 'TEXTAREA', 'SELECT'].includes(element.tagName) &&
+    !element.disabled
+  );
+}
+
+function runIfAvailable(button, actionName, action) {
+  if (!button) {
+    setMessage(`${actionName} is unavailable.`, 'error');
+    return;
+  }
+  if (button.disabled) {
+    setMessage(`${actionName} is currently unavailable.`, 'info');
+    return;
+  }
+
+  action();
+}
+
+function runKeyboardShortcut(event) {
+  if (!event) {
+    return;
+  }
+
+  const key = event.key.toLowerCase();
+
+  if (key === 'escape' && !dom.previewModal?.hidden) {
+    closePreviewModal();
+    return;
+  }
+
+  if (!dom.previewModal?.hidden && event.key === 'Tab') {
+    trapPreviewModalFocus(event);
+    return;
+  }
+
+  if (!dom.previewModal?.hidden) {
+    return;
+  }
+
+  if (isTypingTarget(event.target) || event.target?.isContentEditable) {
+    return;
+  }
+
+  const shortcutActions = {
+    r: () => runIfAvailable(dom.processBtn, 'Render simulations', () => renderAll()),
+    u: () => runIfAvailable(dom.demoUi, 'Load demo UI', () => dom.demoUi.click()),
+    d: () => runIfAvailable(dom.demoDashboard, 'Load demo dashboard', () => dom.demoDashboard.click()),
+    c: () => runIfAvailable(dom.contrastBtn, 'Contrast check', () => dom.contrastBtn.click()),
+    a: () => runIfAvailable(dom.suggestBtn, 'Palette suggestion', () => dom.suggestBtn.click()),
+  };
+
+  if (!shortcutActions[key]) {
+    return;
+  }
+
+  event.preventDefault();
+  shortcutActions[key]();
 }
 
 function openPreviewModal({ modeId, label, canvas }) {
@@ -304,6 +422,8 @@ function openPreviewModal({ modeId, label, canvas }) {
   dom.previewModal.hidden = false;
   dom.previewModal.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
+  modalReturnFocusElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  focusFirstModalElement();
 
   if (dom.previewModalDownloadBtn) {
     dom.previewModalDownloadBtn.onclick = () => {
@@ -2044,9 +2164,7 @@ function init() {
   }
 
   window.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && !dom.previewModal?.hidden) {
-      closePreviewModal();
-    }
+    runKeyboardShortcut(event);
   });
 
   renderAccessibilitySummary();
