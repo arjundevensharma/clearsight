@@ -19,6 +19,7 @@ const IMPACT_LEVEL = {
   high: 18,
   medium: 10,
 };
+const COMPARE_DEFAULT_PERCENT = 50;
 
 const state = {
   sourceImage: null,
@@ -233,6 +234,10 @@ function markSimulationCardsPending() {
   cards.forEach((card) => {
     const status = card.querySelector('.sim-status');
     const exportBtn = card.querySelector('.tiny-btn');
+    const slider = card.querySelector('.sim-compare-slider');
+    const overlay = card.querySelector('.sim-overlay');
+    const divider = card.querySelector('.sim-compare-divider');
+    const compareValue = card.querySelector('.sim-compare-value');
     card.classList.remove('impact-high', 'impact-medium', 'impact-low');
     if (status) {
       status.textContent = 'Waiting for source';
@@ -240,6 +245,19 @@ function markSimulationCardsPending() {
     }
     if (exportBtn) {
       exportBtn.disabled = true;
+    }
+    if (slider) {
+      slider.disabled = true;
+      slider.value = String(COMPARE_DEFAULT_PERCENT);
+    }
+    if (overlay) {
+      overlay.style.width = `${COMPARE_DEFAULT_PERCENT}%`;
+    }
+    if (divider) {
+      divider.style.left = `${COMPARE_DEFAULT_PERCENT}%`;
+    }
+    if (compareValue) {
+      compareValue.textContent = `${COMPARE_DEFAULT_PERCENT}%`;
     }
   });
 }
@@ -322,16 +340,56 @@ function createModeCard(mode) {
 
   header.append(title, downloadBtn);
 
+  const compareWrap = document.createElement('div');
+  compareWrap.className = 'sim-compare';
+
+  const sourceCanvas = document.createElement('canvas');
+  sourceCanvas.className = 'sim-source-canvas';
+  sourceCanvas.setAttribute('aria-hidden', 'true');
+
+  const overlay = document.createElement('div');
+  overlay.className = 'sim-overlay';
+  overlay.style.width = `${COMPARE_DEFAULT_PERCENT}%`;
+
+  const divider = document.createElement('span');
+  divider.className = 'sim-compare-divider';
+  divider.style.left = `${COMPARE_DEFAULT_PERCENT}%`;
+
   const canvas = document.createElement('canvas');
   canvas.className = 'sim-canvas';
   canvas.setAttribute('role', 'img');
   canvas.setAttribute('aria-label', `${mode.label} preview`);
+  overlay.append(canvas);
+
+  const compareValue = document.createElement('span');
+  compareValue.className = 'sim-compare-value';
+  compareValue.textContent = `${COMPARE_DEFAULT_PERCENT}%`;
+
+  const slider = document.createElement('input');
+  slider.type = 'range';
+  slider.min = '0';
+  slider.max = '100';
+  slider.value = String(COMPARE_DEFAULT_PERCENT);
+  slider.className = 'sim-compare-slider';
+  slider.disabled = true;
+  slider.setAttribute('aria-label', `${mode.label} source-to-sim overlay comparison`);
+  slider.addEventListener('input', () => {
+    overlay.style.width = `${slider.value}%`;
+    divider.style.left = `${slider.value}%`;
+    compareValue.textContent = `${slider.value}%`;
+  });
+
+  const compareRow = document.createElement('div');
+  compareRow.className = 'sim-compare-row';
+  compareRow.append(slider, compareValue);
+
+  compareWrap.append(sourceCanvas, overlay, divider);
 
   const status = document.createElement('p');
   status.className = 'sim-status';
   status.textContent = 'Pending';
 
-  card.append(header, canvas, status);
+  card.append(header, compareWrap, compareRow, status);
   return card;
 }
 
@@ -571,12 +629,22 @@ async function renderMode(mode, sourceSize) {
   const canvas = card.querySelector('.sim-canvas');
   const status = card.querySelector('.sim-status');
   const exportBtn = card.querySelector('.tiny-btn');
+  const sourceCanvas = card.querySelector('.sim-source-canvas');
+  const slider = card.querySelector('.sim-compare-slider');
+  const overlay = card.querySelector('.sim-overlay');
+  const divider = card.querySelector('.sim-compare-divider');
+  const compareValue = card.querySelector('.sim-compare-value');
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const sourceCtx = sourceCanvas?.getContext('2d', { willReadFrequently: true });
   let impactPercent = null;
   let impactLevel = 'neutral';
 
   canvas.width = sourceSize.width;
   canvas.height = sourceSize.height;
+  if (sourceCanvas) {
+    sourceCanvas.width = sourceSize.width;
+    sourceCanvas.height = sourceSize.height;
+  }
   card.classList.remove('is-done', 'is-error');
   card.classList.remove('impact-high', 'impact-medium', 'impact-low');
   status.textContent = 'Rendering...';
@@ -584,8 +652,26 @@ async function renderMode(mode, sourceSize) {
   if (exportBtn) {
     exportBtn.disabled = true;
   }
+  if (slider) {
+    slider.disabled = true;
+  }
+  const comparePercent = Number(slider?.value) || COMPARE_DEFAULT_PERCENT;
+  if (overlay) {
+    overlay.style.width = `${comparePercent}%`;
+  }
+  if (divider) {
+    divider.style.left = `${comparePercent}%`;
+  }
+  if (compareValue) {
+    compareValue.textContent = `${comparePercent}%`;
+  }
 
   try {
+    if (!sourceCanvas || !sourceCtx) {
+      throw new Error('Missing source canvas for comparison preview.');
+    }
+    sourceCtx.clearRect(0, 0, sourceCanvas.width, sourceCanvas.height);
+    sourceCtx.drawImage(state.sourceImage, 0, 0, sourceSize.width, sourceSize.height);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (mode.kind === 'matrix') {
       const sourceData = state.sourceImageData?.data;
@@ -620,6 +706,9 @@ async function renderMode(mode, sourceSize) {
     card.classList.add('is-done');
     if (exportBtn) {
       exportBtn.disabled = false;
+    }
+    if (slider) {
+      slider.disabled = false;
     }
 
     return {
@@ -744,7 +833,7 @@ function downloadAllPreviews() {
         return;
       }
       const id = card.dataset.mode;
-      const canvas = card.querySelector('canvas');
+      const canvas = card.querySelector('.sim-canvas');
       downloadCanvasAsImage(canvas, makeExportFileName(id));
       downloaded += 1;
     });

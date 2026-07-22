@@ -288,9 +288,9 @@ button:hover:not(:disabled) {
 
 .sim-canvas {
   width: 100%;
-  aspect-ratio: 16 / 9;
-  border: 1px solid var(--border);
-  border-radius: 8px;
+  height: 100%;
+  position: absolute;
+  inset: 0;
   display: block;
   background: #fff;
 }
@@ -306,6 +306,72 @@ button:hover:not(:disabled) {
   color: var(--muted);
   min-height: 1.2rem;
   font-size: 0.9rem;
+}
+
+.sim-compare {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.sim-source-canvas,
+.sim-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.sim-source-canvas {
+  display: block;
+}
+
+.sim-overlay {
+  left: 0;
+  top: 0;
+  overflow: hidden;
+  pointer-events: none;
+  will-change: width;
+}
+
+.sim-compare-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: color-mix(in srgb, var(--ink) 75%, transparent);
+  left: 50%;
+  transform: translateX(-1px);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ring) 85%, transparent);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.sim-overlay {
+  z-index: 1;
+}
+
+.sim-compare-row {
+  margin-top: 0.55rem;
+  display: flex;
+  gap: 0.55rem;
+  align-items: center;
+}
+
+.sim-compare-slider {
+  flex: 1;
+  accent-color: var(--accent);
+}
+
+.sim-compare-value {
+  color: var(--muted);
+  font-size: 0.8rem;
+  min-width: 2.5rem;
+  text-align: right;
 }
 
 .sim-status.loading {
@@ -338,10 +404,6 @@ button:hover:not(:disabled) {
 
 .sim-card.impact-low {
   border-color: color-mix(in srgb, var(--good) 40%, var(--ring));
-}
-
-.sim-canvas {
-  opacity: 0.85;
 }
 
 .sim-card.is-done .sim-canvas,
