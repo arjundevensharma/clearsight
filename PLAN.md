@@ -69,6 +69,7 @@ The project is intentionally scoped for a one-day build:
 - [x] Add judge summary markdown export with ranked simulations, contrast state, and suggestion payload for fast reviewer handoff.
 - [x] Include markdown judge summary in the one-click submission package export so downloaded bundles contain both machine-readable and human-readable reporting.
 - [x] Add one-click judge summary copy action in the demo panel for fast clipboard handoff during live judging.
+- [x] Add an in-app judge snapshot panel that surfaces top-impact simulation risk, contrast status, and one-click copy for quick judge handoff.
 
 ## Architecture
 ### File layout

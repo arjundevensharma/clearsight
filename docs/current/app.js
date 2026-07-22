@@ -195,10 +195,12 @@ const dom = {
   suggestBtn: document.getElementById('suggestBtn'),
   suggestionWrap: document.getElementById('suggestions'),
   copySummaryBtn: document.getElementById('copySummaryBtn'),
+  copyJudgeSnapshotBtn: document.getElementById('copyJudgeSnapshotBtn'),
   simPlaceholder: document.getElementById('simEmptyState'),
   impactSummary: document.getElementById('impactSummary'),
   contrastValidation: document.getElementById('contrastValidation'),
   accessibilitySummary: document.getElementById('accessibilitySummary'),
+  judgeSnapshot: document.getElementById('judgeSnapshot'),
   copyDemoScriptBtn: document.getElementById('copyDemoScriptBtn'),
   copyChecklistBtn: document.getElementById('copyChecklistBtn'),
   demoCopyStatus: document.getElementById('demoCopyStatus'),
@@ -355,6 +357,76 @@ function renderAccessibilitySummary() {
     <p class="summary-title">Accessibility health: <strong>${levelLabel[overallLevel]}</strong></p>
     <ul class="summary-list">${bullets.map((bullet) => `<li>${bullet}</li>`).join('')}</ul>
   `;
+  updateJudgeQuickSnapshot();
+}
+
+function buildJudgeQuickSummaryText() {
+  if (!state.sourceImage) {
+    return 'Load an image and render simulations to generate a judge snapshot.';
+  }
+
+  if (!state.hasRenderedSource || !state.modeImpacts.length) {
+    return 'Render simulations to populate judge snapshot details.';
+  }
+
+  const report = buildAccessibilityReport();
+  const lines = [];
+  const sourceFile = report.source.fileName || 'Untitled source image';
+  lines.push(`Judge snapshot — ${sourceFile}`);
+  lines.push(
+    `Rendered size: ${report.source.renderedSize.width || 0}×${report.source.renderedSize.height || 0}px`,
+  );
+  lines.push(`Simulation intensity: ${report.simulationIntensity}%`);
+
+  if (report.topImpactMode) {
+    lines.push(
+      `Top impact: ${report.topImpactMode.label} (${report.topImpactMode.impactPercent?.toFixed(1)}% pixel change)`,
+    );
+  } else {
+    lines.push('Top impact: not available');
+  }
+
+  if (report.contrast.lastChecked) {
+    const status = report.contrast.lastChecked.passesAA ? 'PASS' : 'FAIL';
+    lines.push(
+      `Contrast baseline (${report.contrast.lastChecked.aaThreshold.toFixed(1)}:1): ${status} ${report.contrast.text}/${report.contrast.background} → ${report.contrast.lastChecked.ratio.toFixed(2)}:1`,
+    );
+  } else {
+    lines.push('Contrast check: not run');
+  }
+
+  const notableImpacts = report.simulations
+    .filter((entry) => entry.impactLevel === 'high' || entry.impactLevel === 'medium')
+    .slice(0, 3)
+    .map(
+      (entry) =>
+        `${entry.label}: ${entry.impactPercent === null ? 'N/A' : `${entry.impactPercent.toFixed(1)}% change`} (${entry.impactLevel})`,
+    );
+
+  if (notableImpacts.length) {
+    lines.push(`High/moderate risks: ${notableImpacts.join(' | ')}`);
+  } else {
+    lines.push('High/moderate risks: none detected');
+  }
+
+  if (report.suggestions.length) {
+    const topPair = report.suggestions[0];
+    lines.push(
+      `Suggested starter pair: text ${topPair.text} on ${topPair.background} (${topPair.ratio.toFixed(2)}:1)`,
+    );
+  } else {
+    lines.push('Suggested starter pair: none generated yet');
+  }
+
+  return lines.join('\n');
+}
+
+function updateJudgeQuickSnapshot() {
+  if (!dom.judgeSnapshot) {
+    return;
+  }
+
+  dom.judgeSnapshot.textContent = buildJudgeQuickSummaryText();
 }
 
 function setMessage(text, type = 'info') {
@@ -672,6 +744,7 @@ function runKeyboardShortcut(event) {
     d: () => runIfAvailable(dom.demoDashboard, 'Load demo dashboard', () => dom.demoDashboard.click()),
     c: () => runIfAvailable(dom.contrastBtn, 'Contrast check', () => dom.contrastBtn.click()),
     a: () => runIfAvailable(dom.suggestBtn, 'Palette suggestion', () => dom.suggestBtn.click()),
+    s: () => runIfAvailable(dom.copyJudgeSnapshotBtn, 'Judge snapshot copy', () => dom.copyJudgeSnapshotBtn.click()),
     j: () => runIfAvailable(dom.downloadSummaryBtn, 'Judge summary export', () => dom.downloadSummaryBtn.click()),
     p: () => openTopImpactPreview(),
     t: () => startColorPicker(COLOR_PICKER_TARGET_TEXT),
@@ -2524,6 +2597,27 @@ async function copyJudgeSummary() {
   setDemoCopyStatus('Judge summary copied to clipboard.');
 }
 
+async function copyJudgeSnapshot() {
+  if (state.isRendering) {
+    setDemoCopyStatus('Finish rendering before copying the judge snapshot.');
+    return;
+  }
+
+  if (!state.sourceImage || !state.hasRenderedSource || !state.modeImpacts.length) {
+    setDemoCopyStatus('Render an image and simulations before copying the judge snapshot.');
+    return;
+  }
+
+  const snapshot = buildJudgeQuickSummaryText();
+  const copied = await copyTextToClipboard(snapshot);
+  if (!copied) {
+    setDemoCopyStatus('Clipboard copy is not supported in this browser. Highlight text manually if needed.');
+    return;
+  }
+
+  setDemoCopyStatus('Judge snapshot copied.');
+}
+
 function readImageAndRender(file) {
   clearWorkspace({ notify: false });
   return withImageFromFile(file)
@@ -2693,6 +2787,10 @@ function init() {
   dom.copySummaryBtn?.addEventListener('click', () => {
     clearDemoCopyStatus();
     copyJudgeSummary().catch(() => setDemoCopyStatus('Clipboard copy was interrupted.'));
+  });
+  dom.copyJudgeSnapshotBtn?.addEventListener('click', () => {
+    clearDemoCopyStatus();
+    copyJudgeSnapshot().catch(() => setDemoCopyStatus('Clipboard copy was interrupted.'));
   });
 
   if (dom.previewModalCloseBtn) {

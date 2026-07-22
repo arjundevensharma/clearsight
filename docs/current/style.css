@@ -819,6 +819,19 @@ input[type='text'] {
   color: var(--ink);
 }
 
+.judge-quick-snapshot {
+  margin-top: 0.65rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--ring);
+  border-radius: 10px;
+  background: #f8fafc;
+  color: var(--ink-soft);
+  font-family: ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  white-space: pre-wrap;
+}
+
 .accessibility-summary {
   margin-top: 0.65rem;
   border-radius: 10px;
