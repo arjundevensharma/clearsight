@@ -36,9 +36,26 @@
           <button id="downloadSourceBtn" type="button">Download source preview</button>
           <button id="clearWorkspaceBtn" type="button">Clear workspace</button>
         </div>
+        <details id="shortcutHelp" class="shortcut-help">
+          <summary>Keyboard shortcuts</summary>
+          <div class="shortcut-help-content">
+            <p>Use these for fast demos and keyboard-first workflows:</p>
+            <ul class="shortcut-help-list">
+              <li><kbd>R</kbd> Render simulations</li>
+              <li><kbd>U</kbd> Load demo UI</li>
+              <li><kbd>D</kbd> Load demo dashboard</li>
+              <li><kbd>P</kbd> Inspect highest-impact simulation</li>
+              <li><kbd>C</kbd> Run contrast check</li>
+              <li><kbd>A</kbd> Generate suggestions</li>
+              <li><kbd>T</kbd> Pick text color</li>
+              <li><kbd>B</kbd> Pick background color</li>
+              <li><kbd>?</kbd> or <kbd>H</kbd> Toggle this help</li>
+              <li><kbd>Esc</kbd> Cancel color picker / close open modal / close help</li>
+            </ul>
+          </div>
+        </details>
         <p class="muted shortcut-hints">
-          Keyboard shortcuts: <kbd>R</kbd> Render, <kbd>U</kbd> Demo UI,
-          <kbd>D</kbd> Demo dashboard, <kbd>C</kbd> Contrast check, <kbd>A</kbd> Palette suggestions, <kbd>Esc</kbd> close preview modal.
+          Tip: use <kbd>?</kbd> or <kbd>H</kbd> to open the shortcut panel.
         </p>
         <p id="exportNote" class="muted"></p>
       </section>
@@ -60,6 +77,7 @@
           <button id="downloadReportBtn" type="button">Download accessibility report</button>
           <button id="downloadPackageBtn" type="button">Download submission package</button>
           <button id="topImpactFilterBtn" type="button" aria-pressed="false">Show top-impact simulations only</button>
+          <button id="openTopImpactBtn" type="button" aria-label="Inspect highest-impact simulation" disabled>Inspect highest-impact simulation</button>
         </div>
         <div class="sim-compare-global">
           <label for="globalCompareSlider">Global source vs simulation blend</label>

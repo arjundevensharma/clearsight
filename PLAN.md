@@ -59,6 +59,7 @@ The project is intentionally scoped for a one-day build:
 - [x] Add one-click highest-impact preview action (button + keyboard shortcut) for immediate demo triage.
 - [x] Add an in-app judge-focused onboarding workflow panel and mirrored README execution checklist for faster demo clarity.
 - [x] Add discoverable keyboard shortcut help panel with `?`/`H` toggle and full shortcut legend.
+- [x] Expose the existing top-impact preview action and keyboard-shortcut help directly in the simulator UI (details panel + top-impact inspect button).
 - [x] Persist demo settings across reloads (global comparison, simulation intensity, contrast defaults, large-text mode) for frictionless repeat demos.
 - [x] Fix runtime blockers from a syntax regression by removing an extra closing brace in `docs/app.js` and `docs/current/app.js` so the app parses and runs reliably.
 

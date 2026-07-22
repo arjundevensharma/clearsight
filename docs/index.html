@@ -21,22 +21,6 @@
         </p>
       </header>
 
-      <section class="card onboarding" aria-labelledby="onboarding-title">
-        <h2 id="onboarding-title">Fast 60-second judge demo flow</h2>
-        <ol class="onboarding-steps">
-          <li><strong>Load</strong> a source image using a demo or upload.</li>
-          <li><strong>Render</strong> all simulations to reveal ranked visual impact.</li>
-          <li><strong>Inspect</strong> the highest-impact preview for quick triage.</li>
-          <li><strong>Check</strong> contrast, then generate accessible palette alternatives.</li>
-          <li><strong>Export</strong> the package for submission screenshots or sharing.</li>
-        </ol>
-        <p class="muted onboarding-hint">
-          Power-user workflow: <kbd>U</kbd> demo UI, <kbd>D</kbd> demo dashboard,
-          <kbd>R</kbd> render simulations, <kbd>C</kbd> contrast check,
-          <kbd>A</kbd> suggestions, <kbd>P</kbd> open top-impact preview.
-        </p>
-      </section>
-
       <section class="card controls" aria-labelledby="source-title">
         <h2 id="source-title">1) Source image</h2>
         <p id="message" class="message" role="status" aria-live="polite"></p>
@@ -52,25 +36,27 @@
           <button id="downloadSourceBtn" type="button">Download source preview</button>
           <button id="clearWorkspaceBtn" type="button">Clear workspace</button>
         </div>
-        <p class="muted shortcut-hints">
-          Keyboard shortcuts: <kbd>R</kbd> Render, <kbd>U</kbd> Demo UI,
-          <kbd>D</kbd> Demo dashboard, <kbd>C</kbd> Contrast check, <kbd>A</kbd> Palette suggestions, <kbd>P</kbd> Open highest-impact preview, <kbd>T</kbd> Pick text color, <kbd>B</kbd> Pick background color, <kbd>?</kbd> Open shortcut help, <kbd>Esc</kbd> close active overlay.
-        </p>
         <details id="shortcutHelp" class="shortcut-help">
-          <summary>Keyboard shortcuts help</summary>
-          <ul class="shortcut-help-list">
-            <li><kbd>R</kbd> Render simulations</li>
-            <li><kbd>U</kbd> Load demo UI</li>
-            <li><kbd>D</kbd> Load demo dashboard</li>
-            <li><kbd>C</kbd> Run contrast check</li>
-            <li><kbd>A</kbd> Generate palette suggestions</li>
-            <li><kbd>P</kbd> Open highest-impact preview</li>
-            <li><kbd>T</kbd> Pick text color from source</li>
-            <li><kbd>B</kbd> Pick background color from source</li>
-            <li><kbd>?</kbd> / <kbd>H</kbd> Open or close this shortcut help</li>
-            <li><kbd>Esc</kbd> Close open modal, color picker, or this help panel</li>
-          </ul>
+          <summary>Keyboard shortcuts</summary>
+          <div class="shortcut-help-content">
+            <p>Use these for fast demos and keyboard-first workflows:</p>
+            <ul class="shortcut-help-list">
+              <li><kbd>R</kbd> Render simulations</li>
+              <li><kbd>U</kbd> Load demo UI</li>
+              <li><kbd>D</kbd> Load demo dashboard</li>
+              <li><kbd>P</kbd> Inspect highest-impact simulation</li>
+              <li><kbd>C</kbd> Run contrast check</li>
+              <li><kbd>A</kbd> Generate suggestions</li>
+              <li><kbd>T</kbd> Pick text color</li>
+              <li><kbd>B</kbd> Pick background color</li>
+              <li><kbd>?</kbd> or <kbd>H</kbd> Toggle this help</li>
+              <li><kbd>Esc</kbd> Cancel color picker / close open modal / close help</li>
+            </ul>
+          </div>
         </details>
+        <p class="muted shortcut-hints">
+          Tip: use <kbd>?</kbd> or <kbd>H</kbd> to open the shortcut panel.
+        </p>
         <p id="exportNote" class="muted"></p>
       </section>
 
@@ -90,8 +76,8 @@
           <button id="downloadTopImpactBtn" type="button">Download top-impact pack</button>
           <button id="downloadReportBtn" type="button">Download accessibility report</button>
           <button id="downloadPackageBtn" type="button">Download submission package</button>
-          <button id="openTopImpactBtn" type="button">Inspect highest-impact simulation</button>
           <button id="topImpactFilterBtn" type="button" aria-pressed="false">Show top-impact simulations only</button>
+          <button id="openTopImpactBtn" type="button" aria-label="Inspect highest-impact simulation" disabled>Inspect highest-impact simulation</button>
         </div>
         <div class="sim-compare-global">
           <label for="globalCompareSlider">Global source vs simulation blend</label>
