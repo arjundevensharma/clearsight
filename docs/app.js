@@ -122,6 +122,7 @@ const dom = {
   previewModalImage: document.getElementById('previewModalImage'),
   previewModalDownloadBtn: document.getElementById('previewModalDownloadBtn'),
   previewModalCloseBtn: document.getElementById('previewModalCloseBtn'),
+  shortcutHelp: document.getElementById('shortcutHelp'),
 };
 
 function getImpactLevel(impactPercent) {
@@ -291,6 +292,30 @@ function closePreviewModal() {
     modalReturnFocusElement.focus();
   }
   modalReturnFocusElement = null;
+}
+
+function setShortcutHelp(open) {
+  if (!dom.shortcutHelp) {
+    return;
+  }
+
+  const nextState = Boolean(open);
+  if (nextState) {
+    dom.shortcutHelp.setAttribute('open', '');
+    const summary = dom.shortcutHelp.querySelector('summary');
+    if (summary && typeof summary.focus === 'function') {
+      summary.focus();
+    }
+  } else {
+    dom.shortcutHelp.removeAttribute('open');
+  }
+}
+
+function toggleShortcutHelp() {
+  if (!dom.shortcutHelp) {
+    return;
+  }
+  setShortcutHelp(!dom.shortcutHelp.open);
 }
 
 function getModeImpactById(modeId) {
@@ -470,6 +495,11 @@ function runKeyboardShortcut(event) {
   const key = event.key.toLowerCase();
 
   if (key === 'escape') {
+    if (dom.shortcutHelp?.open) {
+      setShortcutHelp(false);
+      setMessage('Keyboard shortcut help closed.', 'info');
+      return;
+    }
     if (!dom.previewModal?.hidden) {
       closePreviewModal();
       return;
@@ -506,6 +536,15 @@ function runKeyboardShortcut(event) {
   };
 
   if (!shortcutActions[key]) {
+    if (key === '?' || key === 'h') {
+      toggleShortcutHelp();
+      setMessage(
+        dom.shortcutHelp?.open ? 'Keyboard shortcut help opened.' : 'Keyboard shortcut help closed.',
+        'info',
+      );
+      return;
+    }
+
     return;
   }
 

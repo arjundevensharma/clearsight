@@ -33,6 +33,7 @@ The project is intentionally scoped for a one-day build:
 9. Instructional demo script links and screenshot checklist for Devpost submission.
 10. Lightweight export controls for generated results (downloadable previews).
 11. Add source-image color picker controls for direct contrast text/background sampling.
+12. Add discoverable keyboard shortcut help panel with `?`/`H` toggle and shortcut legend.
 
 ## Session checkpoint (2026-07-22)
 - [x] Add simulation impact ranking to make high-risk vision modes immediately visible after render.
@@ -57,6 +58,7 @@ The project is intentionally scoped for a one-day build:
 - [x] Add quick-access top-impact simulations filter toggle for rapid high-risk review during demos.
 - [x] Add one-click highest-impact preview action (button + keyboard shortcut) for immediate demo triage.
 - [x] Add an in-app judge-focused onboarding workflow panel and mirrored README execution checklist for faster demo clarity.
+- [x] Add discoverable keyboard shortcut help panel with `?`/`H` toggle and full shortcut legend.
 
 ## Architecture
 ### File layout

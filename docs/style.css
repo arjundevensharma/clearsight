@@ -253,6 +253,35 @@ button:hover:not(:disabled) {
   gap: 0.4rem;
 }
 
+.shortcut-help {
+  border: 1px solid var(--ring);
+  border-radius: 10px;
+  background: #f8fafc;
+  padding: 0.5rem 0.75rem 0.65rem;
+  margin: 0.45rem 0 0.65rem;
+}
+
+.shortcut-help summary {
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.shortcut-help-list {
+  margin: 0.55rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.shortcut-help-list li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  line-height: 1.35;
+}
+
 kbd {
   border: 1px solid #94a3b8;
   background: #f8fafc;
