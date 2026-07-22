@@ -1,5 +1,6 @@
 import {
   CVD_MODES,
+  formatBytes,
   evaluateContrast,
   parseHexColor,
   getDemoScriptText,
@@ -20,6 +21,7 @@ const state = {
   sourceName: '',
   renderSize: { width: 0, height: 0 },
   isRendering: false,
+  hasRenderedSource: false,
 };
 
 const cvdModes = CVD_MODES.filter((mode) => mode.id !== 'normal');
@@ -59,6 +61,7 @@ const dom = {
   contrastBtn: document.getElementById('contrastBtn'),
   suggestBtn: document.getElementById('suggestBtn'),
   suggestionWrap: document.getElementById('suggestions'),
+  simPlaceholder: document.getElementById('simEmptyState'),
   contrastValidation: document.getElementById('contrastValidation'),
   copyDemoScriptBtn: document.getElementById('copyDemoScriptBtn'),
   copyChecklistBtn: document.getElementById('copyChecklistBtn'),
@@ -136,8 +139,15 @@ function clearContrastValidation() {
 
 function setImageControlsEnabled(enabled) {
   dom.processBtn.disabled = !enabled;
-  dom.downloadSourceBtn.disabled = !enabled;
-  dom.downloadAllBtn.disabled = !enabled;
+  dom.downloadSourceBtn.disabled = !enabled || !state.hasRenderedSource;
+  dom.downloadAllBtn.disabled = !enabled || !state.hasRenderedSource;
+}
+
+function setSimPlaceholderVisible(visible) {
+  if (!dom.simPlaceholder) {
+    return;
+  }
+  dom.simPlaceholder.hidden = !visible;
 }
 
 function markSimulationCardsPending() {
@@ -146,7 +156,7 @@ function markSimulationCardsPending() {
     const status = card.querySelector('.sim-status');
     const exportBtn = card.querySelector('.tiny-btn');
     if (status) {
-      status.textContent = 'Pending';
+      status.textContent = 'Waiting for source';
       status.className = 'sim-status';
     }
     if (exportBtn) {
@@ -278,7 +288,9 @@ function withImageFromFile(file) {
     throw new Error('The selected image is empty or invalid.');
   }
   if (file.size > MAX_FILE_SIZE_BYTES) {
-    throw new Error('Image is too large. Please use a file smaller than 10 MB.');
+    throw new Error(
+      `Image is too large (${formatBytes(file.size)}). Maximum supported size is ${formatBytes(MAX_FILE_SIZE_BYTES)}.`,
+    );
   }
 
   return new Promise((resolve, reject) => {
@@ -484,6 +496,7 @@ async function renderMode(mode, sourceSize) {
 
   canvas.width = sourceSize.width;
   canvas.height = sourceSize.height;
+  card.classList.remove('is-done', 'is-error');
   status.textContent = 'Rendering...';
   status.className = 'sim-status loading';
   if (exportBtn) {
@@ -507,6 +520,7 @@ async function renderMode(mode, sourceSize) {
 
     status.textContent = 'Done';
     status.className = 'sim-status done';
+    card.classList.add('is-done');
     if (exportBtn) {
       exportBtn.disabled = false;
     }
@@ -514,6 +528,7 @@ async function renderMode(mode, sourceSize) {
     ctx.filter = 'none';
     status.textContent = error.message || 'Render failed';
     status.className = 'sim-status error';
+    card.classList.add('is-error');
     if (exportBtn) {
       exportBtn.disabled = true;
     }
@@ -531,7 +546,9 @@ async function renderAll() {
   }
 
   state.isRendering = true;
+  state.hasRenderedSource = false;
   markSimulationCardsPending();
+  setSimPlaceholderVisible(false);
 
   setControlState(true);
   setImageControlsEnabled(false);
@@ -550,6 +567,7 @@ async function renderAll() {
     dom.sourceCanvas.height = sourceSize.height;
     sourceCtx.clearRect(0, 0, sourceSize.width, sourceSize.height);
     sourceCtx.drawImage(state.sourceImage, 0, 0, sourceSize.width, sourceSize.height);
+    state.hasRenderedSource = true;
     showSourceMeta(state.sourceName, sourceSize.width, sourceSize.height);
 
     for (const mode of allModes) {
@@ -567,12 +585,17 @@ async function renderAll() {
   } finally {
     state.isRendering = false;
     setImageControlsEnabled(Boolean(state.sourceImage));
+    setSimPlaceholderVisible(!state.hasRenderedSource);
   }
 }
 
 function downloadAllPreviews() {
   if (state.isRendering) {
     setMessage('Please wait for rendering to finish before downloading.', 'info');
+    return;
+  }
+  if (!state.hasRenderedSource) {
+    setMessage('Render the source first before exporting.', 'error');
     return;
   }
 
@@ -743,7 +766,9 @@ function readImageAndRender(file) {
       state.sourceImage = image;
       state.sourceName = file.name || 'uploaded-image';
       state.renderSize = { width: 0, height: 0 };
+      state.hasRenderedSource = false;
       markSimulationCardsPending();
+      setSimPlaceholderVisible(true);
       dom.exportNote.textContent = '';
       clearContrastValidation();
       return renderAll();
@@ -751,13 +776,16 @@ function readImageAndRender(file) {
     .catch((error) => {
       setMessage(error.message, 'error');
       setImageControlsEnabled(Boolean(state.sourceImage));
+      setSimPlaceholderVisible(true);
     });
 }
 
 function loadSample(type) {
   try {
+    state.hasRenderedSource = false;
     state.sourceImage = createDemoImage(type);
     state.sourceName = `${type}-sample.png`;
+    setSimPlaceholderVisible(true);
     if (state.sourceImage.complete) {
       renderAll();
     } else {
@@ -774,6 +802,7 @@ function init() {
   setImageControlsEnabled(false);
   setControlState(true);
   setDefaultSuggestionsState();
+  setSimPlaceholderVisible(true);
   clearDemoCopyStatus();
 
   dom.imageInput.addEventListener('change', (event) => {
@@ -794,6 +823,10 @@ function init() {
     try {
       if (!state.sourceImage) {
         setMessage('Upload or load an image before downloading.', 'error');
+        return;
+      }
+      if (!state.hasRenderedSource) {
+        setMessage('Render the source preview before downloading.', 'error');
         return;
       }
       downloadCanvasAsImage(dom.sourceCanvas, makeExportFileName('source'));

@@ -5,6 +5,7 @@ import {
   rgbToHex,
   contrastRatio,
   relativeLuminance,
+  formatBytes,
   getDemoScriptText,
   getSubmissionChecklistText,
   suggestAccessiblePairs,
@@ -79,6 +80,19 @@ test('demo helper text is bundled for copy actions', () => {
   const checklist = getSubmissionChecklistText();
   assert.ok(demoText.includes('1-3 Minute Demo Script'));
   assert.ok(checklist.includes('sim-protanopia.png'));
+});
+
+test('formatBytes provides readable human sizes', () => {
+  assert.equal(formatBytes(0), '0 B');
+  assert.equal(formatBytes(1024), '1.00 KB');
+  assert.equal(formatBytes(1048576, 1), '1.0 MB');
+  assert.equal(formatBytes(1536, 2), '1.50 KB');
+});
+
+test('formatBytes validates input values', () => {
+  assert.throws(() => formatBytes(-1), /Byte count must be/);
+  assert.throws(() => formatBytes('bad'), /Byte count must be/);
+  assert.throws(() => formatBytes(1024, 2.5), /Bytes formatting precision/);
 });
 
 test('each CVD mode has a valid transform matrix', () => {

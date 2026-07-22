@@ -224,6 +224,7 @@ button:hover:not(:disabled) {
   background: #f8fafc;
   border-radius: 12px;
   padding: 0.6rem;
+  transition: border-color 140ms ease, transform 140ms ease;
 }
 
 .sim-card-header {
@@ -265,6 +266,55 @@ button:hover:not(:disabled) {
 
 .sim-status.error {
   color: var(--bad);
+}
+
+.sim-card.is-done {
+  border-color: color-mix(in srgb, var(--good) 45%, var(--ring));
+}
+
+.sim-card.is-error {
+  border-color: color-mix(in srgb, var(--bad) 35%, var(--ring));
+}
+
+.sim-canvas {
+  opacity: 0.85;
+}
+
+.sim-card.is-done .sim-canvas,
+.sim-card.is-error .sim-canvas {
+  opacity: 1;
+}
+
+#simEmptyState {
+  margin: 0.35rem 0 0.45rem;
+}
+
+@keyframes scanline {
+  0% {
+    transform: translateX(-60%);
+  }
+
+  100% {
+    transform: translateX(260%);
+  }
+}
+
+.sim-status.loading {
+  position: relative;
+  overflow: hidden;
+}
+
+.sim-status.loading::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 2px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--warn) 75%, white);
+  animation: scanline 1.1s linear infinite;
 }
 
 .contrast-form {

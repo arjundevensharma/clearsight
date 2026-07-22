@@ -82,6 +82,7 @@ export const CVD_MODES = [
 ];
 
 const clamp = (value) => Math.max(0, Math.min(255, Math.round(value)));
+const BYTE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB'];
 
 const DEMO_SCRIPT_LINES = [
   'ClearSight — 1-3 Minute Demo Script',
@@ -130,6 +131,34 @@ export function getDemoScriptText() {
 
 export function getSubmissionChecklistText() {
   return SUBMISSION_CHECKLIST_LINES.join('\n');
+}
+
+export function formatBytes(bytes, decimals = 2) {
+  requireFinitePositiveNumber(bytes, 'Byte count', 0);
+
+  const safeDecimals = Number(decimals);
+  if (!Number.isInteger(safeDecimals) || safeDecimals < 0 || safeDecimals > 6) {
+    throw new Error('Bytes formatting precision must be a non-negative integer up to 6.');
+  }
+
+  const normalized = Math.floor(bytes);
+  if (normalized === 0) {
+    return '0 B';
+  }
+
+  let value = normalized;
+  let unitIndex = 0;
+
+  while (value >= 1024 && unitIndex < BYTE_UNITS.length - 1) {
+    value /= 1024;
+    unitIndex += 1;
+  }
+
+  if (unitIndex === 0) {
+    return `${value} B`;
+  }
+
+  return `${value.toFixed(safeDecimals)} ${BYTE_UNITS[unitIndex]}`;
 }
 
 function assertFiniteRgbChannel(value, label) {
