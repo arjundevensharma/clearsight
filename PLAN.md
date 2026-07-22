@@ -40,6 +40,7 @@ The project is intentionally scoped for a one-day build:
 - [x] Add drag-and-drop image loading and clipboard-paste upload flow for faster demo iterations.
 - [x] Add contact-sheet export to download source + completed simulation previews as one PNG for submission packaging.
 - [x] Add ranked simulation card ordering so highest-impact previews appear first after each render.
+- [x] Make contact-sheet export rank-aware with visible impact delta metadata for faster judging and review.
 
 ## Architecture
 ### File layout

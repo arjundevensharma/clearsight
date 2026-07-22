@@ -24,7 +24,7 @@ const COMPARE_DEFAULT_PERCENT = 50;
 const CONTACT_SHEET_MAX_TILE_WIDTH = 420;
 const CONTACT_SHEET_COLUMNS = 3;
 const CONTACT_SHEET_GUTTER = 20;
-const CONTACT_SHEET_LABEL_HEIGHT = 28;
+const CONTACT_SHEET_LABEL_HEIGHT = 44;
 
 const state = {
   sourceImage: null,
@@ -957,6 +957,8 @@ function collectCompletedExportCards() {
     id: 'source',
     label: 'Source',
     canvas: dom.sourceCanvas,
+    impactPercent: null,
+    impactLevel: 'neutral',
   };
 
   const simulations = [...dom.simGrid.querySelectorAll('.sim-card')]
@@ -970,11 +972,14 @@ function collectCompletedExportCards() {
       if (!canvas.width || !canvas.height) {
         return null;
       }
+      const impact = state.modeImpacts.find((entry) => entry.modeId === modeId);
 
       return {
         id: modeId,
         label: card.querySelector('.sim-title')?.textContent || modeId,
         canvas,
+        impactPercent: impact?.impactPercent ?? null,
+        impactLevel: impact?.impactLevel ?? 'neutral',
       };
     })
     .filter(Boolean);
@@ -989,8 +994,29 @@ function buildContactSheet(entries) {
   const scale = targetTileWidth / sourceWidth;
   const targetTileHeight = Math.max(1, Math.round(sourceHeight * scale));
 
-  const columns = Math.min(CONTACT_SHEET_COLUMNS, entries.length);
-  const rows = Math.ceil(entries.length / columns);
+  const sourceEntry = entries.find((entry) => entry.id === 'source');
+  const simulationEntries = entries
+    .filter((entry) => entry.id !== 'source')
+    .sort((a, b) => {
+      const aHasImpact = typeof a.impactPercent === 'number';
+      const bHasImpact = typeof b.impactPercent === 'number';
+      if (aHasImpact && bHasImpact) {
+        if (a.impactPercent !== b.impactPercent) {
+          return b.impactPercent - a.impactPercent;
+        }
+      }
+      if (aHasImpact) {
+        return -1;
+      }
+      if (bHasImpact) {
+        return 1;
+      }
+      return 0;
+    });
+
+  const orderedEntries = [sourceEntry || entries[0], ...simulationEntries].filter(Boolean);
+  const columns = Math.min(CONTACT_SHEET_COLUMNS, orderedEntries.length);
+  const rows = Math.ceil(orderedEntries.length / columns);
   const totalWidth =
     columns * targetTileWidth + (columns + 1) * CONTACT_SHEET_GUTTER;
   const headerHeight = 88;
@@ -1015,7 +1041,15 @@ function buildContactSheet(entries) {
   sheetCtx.fillStyle = '#475569';
   sheetCtx.fillText(`Source: ${sourceLabel} • ${sourceWidth}x${sourceHeight}`, CONTACT_SHEET_GUTTER, 58);
 
-  entries.forEach((entry, idx) => {
+  sheetCtx.font = '500 11px Poppins, "Segoe UI", system-ui, -apple-system, sans-serif';
+  sheetCtx.fillStyle = '#64748b';
+  sheetCtx.fillText(
+    'Simulations are ranked by visual impact for quick prioritization.',
+    CONTACT_SHEET_GUTTER,
+    72,
+  );
+
+  orderedEntries.forEach((entry, idx) => {
     const col = idx % columns;
     const row = Math.floor(idx / columns);
     const x = CONTACT_SHEET_GUTTER + col * (targetTileWidth + CONTACT_SHEET_GUTTER);
@@ -1045,12 +1079,17 @@ function buildContactSheet(entries) {
     const labelY = y + targetTileHeight + 18;
     sheetCtx.fillStyle = '#334155';
     sheetCtx.font = '600 12px Poppins, "Segoe UI", system-ui, -apple-system, sans-serif';
-    sheetCtx.fillText(
-      entry.label,
-      x + 8,
-      labelY,
-      targetTileWidth - 12,
-    );
+    const rankText = idx === 0 ? 'Source' : `#${idx}`;
+    const impactText =
+      typeof entry.impactPercent === 'number'
+        ? `${entry.impactPercent.toFixed(1)}% pixel delta`
+        : 'Impact unavailable';
+
+    sheetCtx.fillText(`${rankText}. ${entry.label}`, x + 8, labelY, targetTileWidth - 12);
+
+    sheetCtx.font = '500 10px Poppins, "Segoe UI", system-ui, -apple-system, sans-serif';
+    sheetCtx.fillStyle = '#475569';
+    sheetCtx.fillText(impactText, x + 8, labelY + 15, targetTileWidth - 12);
   });
 
   return contactSheet;
