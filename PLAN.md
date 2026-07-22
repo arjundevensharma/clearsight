@@ -43,6 +43,7 @@ The project is intentionally scoped for a one-day build:
 - [x] Make contact-sheet export rank-aware with visible impact delta metadata for faster judging and review.
 - [x] Add one-click accessibility audit report export (JSON) covering ranked simulation impact and current contrast checks.
 - [x] Add global simulation blend control to synchronize source-vs-sim overlay across all cards for faster review.
+- [x] Add workspace reset control to clear source, simulations, and contrast state between demo iterations.
 
 ## Architecture
 ### File layout

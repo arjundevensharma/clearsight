@@ -62,6 +62,7 @@ const dom = {
   processBtn: document.getElementById('processBtn'),
   exportNote: document.getElementById('exportNote'),
   downloadSourceBtn: document.getElementById('downloadSourceBtn'),
+  clearWorkspaceBtn: document.getElementById('clearWorkspaceBtn'),
   downloadAllBtn: document.getElementById('downloadAllBtn'),
   downloadContactBtn: document.getElementById('downloadContactBtn'),
   downloadReportBtn: document.getElementById('downloadReportBtn'),
@@ -251,6 +252,9 @@ function setImageControlsEnabled(enabled) {
   if (dom.globalCompareSlider) {
     dom.globalCompareSlider.disabled = !enabled;
   }
+  if (dom.clearWorkspaceBtn) {
+    dom.clearWorkspaceBtn.disabled = !enabled || !state.sourceImage;
+  }
 }
 
 function setSimPlaceholderVisible(visible) {
@@ -258,6 +262,43 @@ function setSimPlaceholderVisible(visible) {
     return;
   }
   dom.simPlaceholder.hidden = !visible;
+}
+
+function clearWorkspace({ notify = true } = {}) {
+  state.sourceImage = null;
+  state.sourceName = '';
+  state.renderSize = { width: 0, height: 0 };
+  state.sourceImageData = null;
+  state.isRendering = false;
+  state.hasRenderedSource = false;
+  state.modeImpacts = [];
+  state.lastContrastResult = null;
+  state.lastSuggestionPairs = [];
+
+  if (dom.imageInput) {
+    dom.imageInput.value = '';
+  }
+
+  const sourceCtx = dom.sourceCanvas.getContext('2d');
+  if (sourceCtx) {
+    sourceCtx.clearRect(0, 0, dom.sourceCanvas.width, dom.sourceCanvas.height);
+  }
+  dom.sourceInfo.textContent = 'No image loaded';
+  dom.exportNote.textContent = '';
+
+  renderModeCards();
+  setSimPlaceholderVisible(true);
+  setImpactSummary([]);
+  dom.contrastOut.textContent = '';
+  setDefaultSuggestionsState();
+  clearContrastValidation();
+  syncGlobalCompare(COMPARE_DEFAULT_PERCENT);
+  setImageControlsEnabled(false);
+  setControlState(true);
+
+  if (notify) {
+    setMessage('Workspace reset. Upload or load an image to begin.', 'info');
+  }
 }
 
 function markSimulationCardsPending() {
@@ -1389,6 +1430,7 @@ async function copyDemoText(kind) {
 }
 
 function readImageAndRender(file) {
+  clearWorkspace({ notify: false });
   return withImageFromFile(file)
     .then((image) => {
       state.sourceImage = image;
@@ -1414,6 +1456,7 @@ function readImageAndRender(file) {
 
 function loadSample(type) {
   try {
+    clearWorkspace({ notify: false });
     state.hasRenderedSource = false;
     state.modeImpacts = [];
     state.lastContrastResult = null;
@@ -1434,12 +1477,8 @@ function loadSample(type) {
 }
 
 function init() {
-  renderModeCards();
-  setImageControlsEnabled(false);
+  clearWorkspace({ notify: false });
   setControlState(true);
-  setDefaultSuggestionsState();
-  setSimPlaceholderVisible(true);
-  setImpactSummary([]);
   clearDemoCopyStatus();
 
   dom.imageInput.addEventListener('change', (event) => {
@@ -1501,6 +1540,9 @@ function init() {
   dom.demoUi.addEventListener('click', () => loadSample('ui'));
   dom.demoDashboard.addEventListener('click', () => loadSample('dashboard'));
   dom.processBtn.addEventListener('click', renderAll);
+  dom.clearWorkspaceBtn?.addEventListener('click', () => {
+    clearWorkspace();
+  });
   dom.downloadSourceBtn.addEventListener('click', () => {
     try {
       if (!state.sourceImage) {

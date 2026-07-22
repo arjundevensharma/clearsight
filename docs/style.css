@@ -157,6 +157,19 @@ button:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 
+#clearWorkspaceBtn {
+  background: var(--warn);
+}
+
+#clearWorkspaceBtn:hover:not(:disabled) {
+  background: #9a3412;
+}
+
+#clearWorkspaceBtn:focus-visible {
+  outline: 2px solid #fcd34d;
+  outline-offset: 2px;
+}
+
 .link-btn {
   border: 0;
   padding: 0.6rem 0.95rem;
