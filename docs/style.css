@@ -418,6 +418,30 @@ button:hover:not(:disabled) {
   align-items: center;
 }
 
+.sim-compare-global {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin: 0.35rem 0 0.7rem;
+}
+
+.sim-compare-global label {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+#globalCompareSlider {
+  flex: 1;
+  min-width: 160px;
+  accent-color: var(--accent);
+}
+
+.sim-compare-global .sim-compare-value {
+  min-width: 2.75rem;
+}
+
 .sim-compare-slider {
   flex: 1;
   accent-color: var(--accent);

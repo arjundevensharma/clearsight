@@ -84,6 +84,8 @@ const dom = {
   copyDemoScriptBtn: document.getElementById('copyDemoScriptBtn'),
   copyChecklistBtn: document.getElementById('copyChecklistBtn'),
   demoCopyStatus: document.getElementById('demoCopyStatus'),
+  globalCompareSlider: document.getElementById('globalCompareSlider'),
+  globalCompareValue: document.getElementById('globalCompareValue'),
 };
 
 function getImpactLevel(impactPercent) {
@@ -246,6 +248,9 @@ function setImageControlsEnabled(enabled) {
   if (dom.downloadReportBtn) {
     dom.downloadReportBtn.disabled = !enabled || !state.hasRenderedSource;
   }
+  if (dom.globalCompareSlider) {
+    dom.globalCompareSlider.disabled = !enabled;
+  }
 }
 
 function setSimPlaceholderVisible(visible) {
@@ -256,14 +261,12 @@ function setSimPlaceholderVisible(visible) {
 }
 
 function markSimulationCardsPending() {
+  const globalCompareValue = Number(dom.globalCompareSlider?.value) || COMPARE_DEFAULT_PERCENT;
   const cards = dom.simGrid.querySelectorAll('.sim-card');
   cards.forEach((card) => {
     const status = card.querySelector('.sim-status');
     const exportBtn = card.querySelector('.tiny-btn');
     const slider = card.querySelector('.sim-compare-slider');
-    const overlay = card.querySelector('.sim-overlay');
-    const divider = card.querySelector('.sim-compare-divider');
-    const compareValue = card.querySelector('.sim-compare-value');
     const rank = card.querySelector('.sim-rank');
     card.classList.remove('impact-high', 'impact-medium', 'impact-low');
     if (status) {
@@ -275,22 +278,58 @@ function markSimulationCardsPending() {
     }
     if (slider) {
       slider.disabled = true;
-      slider.value = String(COMPARE_DEFAULT_PERCENT);
+      slider.value = String(globalCompareValue);
     }
-    if (overlay) {
-      overlay.style.width = `${COMPARE_DEFAULT_PERCENT}%`;
-    }
-    if (divider) {
-      divider.style.left = `${COMPARE_DEFAULT_PERCENT}%`;
-    }
-    if (compareValue) {
-      compareValue.textContent = `${COMPARE_DEFAULT_PERCENT}%`;
-    }
+    syncSingleCompareControl(card, globalCompareValue, { updateLabel: true });
     if (rank) {
       rank.hidden = true;
       rank.textContent = '';
     }
   });
+}
+
+function clampComparePercent(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return COMPARE_DEFAULT_PERCENT;
+  }
+  return Math.min(100, Math.max(0, Math.round(numeric)));
+}
+
+function syncSingleCompareControl(card, percent, { updateLabel = false } = {}) {
+  const slider = card.querySelector('.sim-compare-slider');
+  const overlay = card.querySelector('.sim-overlay');
+  const divider = card.querySelector('.sim-compare-divider');
+  const compareValue = card.querySelector('.sim-compare-value');
+  const normalized = clampComparePercent(percent);
+
+  if (slider) {
+    slider.value = String(normalized);
+  }
+  if (overlay) {
+    overlay.style.width = `${normalized}%`;
+  }
+  if (divider) {
+    divider.style.left = `${normalized}%`;
+  }
+  if (compareValue && updateLabel) {
+    compareValue.textContent = `${normalized}%`;
+  }
+
+  return normalized;
+}
+
+function syncGlobalCompare(percent) {
+  if (!dom.globalCompareSlider || !dom.globalCompareValue) {
+    return;
+  }
+
+  const normalized = clampComparePercent(percent);
+  dom.globalCompareSlider.value = String(normalized);
+  dom.globalCompareValue.textContent = `${normalized}%`;
+
+  const cards = [...dom.simGrid.querySelectorAll('.sim-card')];
+  cards.forEach((card) => syncSingleCompareControl(card, normalized, { updateLabel: true }));
 }
 
 function setSimCardRank(card, rankNumber) {
@@ -490,9 +529,7 @@ function createModeCard(mode) {
   slider.disabled = true;
   slider.setAttribute('aria-label', `${mode.label} source-to-sim overlay comparison`);
   slider.addEventListener('input', () => {
-    overlay.style.width = `${slider.value}%`;
-    divider.style.left = `${slider.value}%`;
-    compareValue.textContent = `${slider.value}%`;
+    syncSingleCompareControl(card, slider.value, { updateLabel: true });
   });
 
   const compareRow = document.createElement('div');
@@ -747,9 +784,6 @@ async function renderMode(mode, sourceSize) {
   const exportBtn = card.querySelector('.tiny-btn');
   const sourceCanvas = card.querySelector('.sim-source-canvas');
   const slider = card.querySelector('.sim-compare-slider');
-  const overlay = card.querySelector('.sim-overlay');
-  const divider = card.querySelector('.sim-compare-divider');
-  const compareValue = card.querySelector('.sim-compare-value');
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   const sourceCtx = sourceCanvas?.getContext('2d', { willReadFrequently: true });
   let impactPercent = null;
@@ -771,16 +805,10 @@ async function renderMode(mode, sourceSize) {
   if (slider) {
     slider.disabled = true;
   }
-  const comparePercent = Number(slider?.value) || COMPARE_DEFAULT_PERCENT;
-  if (overlay) {
-    overlay.style.width = `${comparePercent}%`;
-  }
-  if (divider) {
-    divider.style.left = `${comparePercent}%`;
-  }
-  if (compareValue) {
-    compareValue.textContent = `${comparePercent}%`;
-  }
+  const globalComparePercent = Number(dom.globalCompareSlider?.value);
+  syncSingleCompareControl(card, Number.isFinite(globalComparePercent) ? globalComparePercent : slider?.value, {
+    updateLabel: true,
+  });
 
   try {
     if (!sourceCanvas || !sourceCtx) {
@@ -919,6 +947,7 @@ async function renderAll() {
   } finally {
     state.isRendering = false;
     setImageControlsEnabled(Boolean(state.sourceImage));
+    syncGlobalCompare(dom.globalCompareSlider?.value || COMPARE_DEFAULT_PERCENT);
     if (!state.modeImpacts.length) {
       setImpactSummary([]);
     }
@@ -1491,6 +1520,12 @@ function init() {
   dom.downloadAllBtn.addEventListener('click', downloadAllPreviews);
   dom.downloadContactBtn?.addEventListener('click', downloadContactSheet);
   dom.downloadReportBtn?.addEventListener('click', downloadAccessibilityReport);
+  if (dom.globalCompareSlider) {
+    syncGlobalCompare(dom.globalCompareSlider.value || COMPARE_DEFAULT_PERCENT);
+    dom.globalCompareSlider.addEventListener('input', (event) => {
+      syncGlobalCompare(event.target.value);
+    });
+  }
   dom.contrastBtn.addEventListener('click', renderContrastResult);
   dom.suggestBtn.addEventListener('click', renderSuggestions);
   dom.copyDemoScriptBtn?.addEventListener('click', () => {

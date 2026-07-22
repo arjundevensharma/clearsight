@@ -53,6 +53,11 @@
           <button id="downloadContactBtn" type="button">Download contact sheet</button>
           <button id="downloadReportBtn" type="button">Download accessibility report</button>
         </div>
+        <div class="sim-compare-global">
+          <label for="globalCompareSlider">Global source vs simulation blend</label>
+          <input id="globalCompareSlider" type="range" min="0" max="100" value="50" />
+          <span id="globalCompareValue" class="sim-compare-value">50%</span>
+        </div>
         <p id="simEmptyState" class="muted" role="status">Upload or use a demo image and click Render simulations.</p>
         <div id="impactSummary" class="impact-summary muted" role="status" aria-live="polite">
           Run simulations to reveal visual-impact ranking.
