@@ -59,6 +59,7 @@ The project is intentionally scoped for a one-day build:
 - [x] Add one-click highest-impact preview action (button + keyboard shortcut) for immediate demo triage.
 - [x] Add an in-app judge-focused onboarding workflow panel and mirrored README execution checklist for faster demo clarity.
 - [x] Add discoverable keyboard shortcut help panel with `?`/`H` toggle and full shortcut legend.
+- [x] Persist demo settings across reloads (global comparison, simulation intensity, contrast defaults, large-text mode) for frictionless repeat demos.
 
 ## Architecture
 ### File layout

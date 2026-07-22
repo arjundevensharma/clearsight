@@ -34,6 +34,7 @@ const AAA_THRESHOLD_DEFAULT = 7;
 const COLOR_PICKER_TARGET_TEXT = 'text';
 const COLOR_PICKER_TARGET_BACKGROUND = 'background';
 const COLOR_PICKER_SOURCE_CLASS = 'is-picking-color';
+const SETTINGS_STORAGE_KEY = 'clearsight-settings-v1';
 
 const state = {
   sourceImage: null,
@@ -54,6 +55,85 @@ const state = {
 
 let simulationSeverityRerenderTimer = null;
 let modalReturnFocusElement = null;
+
+function getStoredSettings() {
+  try {
+    if (typeof localStorage === 'undefined') {
+      return null;
+    }
+
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function persistUserSettings() {
+  try {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+
+    const payload = {
+      globalComparePercent: clampComparePercent(dom.globalCompareSlider?.value || COMPARE_DEFAULT_PERCENT),
+      simulationSeverityPercent: clampSeverityPercent(
+        state.simulationSeverityPercent || dom.simulationSeveritySlider?.value || SIMULATION_SEVERITY_DEFAULT_PERCENT,
+      ),
+      contrastTextHex: normalizeHexInput(dom.contrastTextHex?.value || dom.contrastText?.value),
+      contrastBgHex: normalizeHexInput(dom.contrastBgHex?.value || dom.contrastBg?.value),
+      largeTextMode: Boolean(dom.contrastLargeText?.checked),
+    };
+
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // Ignore storage failures; persistence is optional.
+  }
+}
+
+function applyPersistedUserSettings() {
+  const settings = getStoredSettings();
+  if (!settings || typeof settings !== 'object') {
+    return;
+  }
+
+  if (typeof settings.globalComparePercent === 'number') {
+    syncGlobalCompare(settings.globalComparePercent);
+  }
+
+  if (typeof settings.simulationSeverityPercent === 'number') {
+    syncSimulationSeverity(settings.simulationSeverityPercent);
+  }
+
+  const textHex = normalizeHexInput(settings.contrastTextHex);
+  if (textHex) {
+    dom.contrastText.value = textHex;
+    if (dom.contrastTextHex) {
+      dom.contrastTextHex.value = textHex.toUpperCase();
+    }
+  }
+
+  const bgHex = normalizeHexInput(settings.contrastBgHex);
+  if (bgHex) {
+    dom.contrastBg.value = bgHex;
+    if (dom.contrastBgHex) {
+      dom.contrastBgHex.value = bgHex.toUpperCase();
+    }
+  }
+
+  if (dom.contrastLargeText && typeof settings.largeTextMode === 'boolean') {
+    dom.contrastLargeText.checked = settings.largeTextMode;
+  }
+}
 
 const cvdModes = CVD_MODES.filter((mode) => mode.id !== 'normal');
 const extraModes = [
@@ -113,6 +193,7 @@ const dom = {
   simulationSeveritySlider: document.getElementById('simulationSeveritySlider'),
   simulationSeverityValue: document.getElementById('simulationSeverityValue'),
   topImpactFilterBtn: document.getElementById('topImpactFilterBtn'),
+  openTopImpactBtn: document.getElementById('openTopImpactBtn'),
   previewModal: document.getElementById('previewModal'),
   previewModalBackdrop: document.getElementById('previewModalBackdrop'),
   previewModalContent: document.querySelector('.preview-modal-content'),
@@ -121,6 +202,7 @@ const dom = {
   previewModalImage: document.getElementById('previewModalImage'),
   previewModalDownloadBtn: document.getElementById('previewModalDownloadBtn'),
   previewModalCloseBtn: document.getElementById('previewModalCloseBtn'),
+  shortcutHelp: document.getElementById('shortcutHelp'),
 };
 
 function getImpactLevel(impactPercent) {
@@ -292,6 +374,30 @@ function closePreviewModal() {
   modalReturnFocusElement = null;
 }
 
+function setShortcutHelp(open) {
+  if (!dom.shortcutHelp) {
+    return;
+  }
+
+  const nextState = Boolean(open);
+  if (nextState) {
+    dom.shortcutHelp.setAttribute('open', '');
+    const summary = dom.shortcutHelp.querySelector('summary');
+    if (summary && typeof summary.focus === 'function') {
+      summary.focus();
+    }
+  } else {
+    dom.shortcutHelp.removeAttribute('open');
+  }
+}
+
+function toggleShortcutHelp() {
+  if (!dom.shortcutHelp) {
+    return;
+  }
+  setShortcutHelp(!dom.shortcutHelp.open);
+}
+
 function getModeImpactById(modeId) {
   return state.modeImpacts.find((entry) => entry.modeId === modeId);
 }
@@ -413,11 +519,13 @@ function setContrastColor(target, hexColor) {
   if (target === COLOR_PICKER_TARGET_TEXT) {
     dom.contrastText.value = hexColor;
     dom.contrastTextHex.value = hexColor.toUpperCase();
+    persistUserSettings();
     return;
   }
 
   dom.contrastBg.value = hexColor;
   dom.contrastBgHex.value = hexColor.toUpperCase();
+  persistUserSettings();
 }
 
 function getSourceCanvasPixelColor(event) {
@@ -469,6 +577,11 @@ function runKeyboardShortcut(event) {
   const key = event.key.toLowerCase();
 
   if (key === 'escape') {
+    if (dom.shortcutHelp?.open) {
+      setShortcutHelp(false);
+      setMessage('Keyboard shortcut help closed.', 'info');
+      return;
+    }
     if (!dom.previewModal?.hidden) {
       closePreviewModal();
       return;
@@ -499,11 +612,21 @@ function runKeyboardShortcut(event) {
     d: () => runIfAvailable(dom.demoDashboard, 'Load demo dashboard', () => dom.demoDashboard.click()),
     c: () => runIfAvailable(dom.contrastBtn, 'Contrast check', () => dom.contrastBtn.click()),
     a: () => runIfAvailable(dom.suggestBtn, 'Palette suggestion', () => dom.suggestBtn.click()),
+    p: () => openTopImpactPreview(),
     t: () => startColorPicker(COLOR_PICKER_TARGET_TEXT),
     b: () => startColorPicker(COLOR_PICKER_TARGET_BACKGROUND),
   };
 
   if (!shortcutActions[key]) {
+    if (key === '?' || key === 'h') {
+      toggleShortcutHelp();
+      setMessage(
+        dom.shortcutHelp?.open ? 'Keyboard shortcut help opened.' : 'Keyboard shortcut help closed.',
+        'info',
+      );
+      return;
+    }
+
     return;
   }
 
@@ -662,6 +785,9 @@ function setImageControlsEnabled(enabled) {
   if (dom.topImpactFilterBtn) {
     dom.topImpactFilterBtn.disabled = !enabled || !state.sourceImage;
   }
+  if (dom.openTopImpactBtn) {
+    dom.openTopImpactBtn.disabled = !enabled || !state.hasRenderedSource;
+  }
   if (dom.clearWorkspaceBtn) {
     dom.clearWorkspaceBtn.disabled = !enabled || !state.sourceImage;
   }
@@ -716,6 +842,7 @@ function clearWorkspace({ notify = true } = {}) {
   clearContrastValidation();
   syncGlobalCompare(COMPARE_DEFAULT_PERCENT);
   setImageControlsEnabled(false);
+  updateTopImpactPreviewButton();
   setControlState(true);
 
   if (notify) {
@@ -771,12 +898,14 @@ function syncSimulationSeverity(percent) {
   const normalized = clampSeverityPercent(percent);
   if (!dom.simulationSeveritySlider || !dom.simulationSeverityValue) {
     state.simulationSeverityPercent = normalized;
+    persistUserSettings();
     return normalized;
   }
 
   dom.simulationSeveritySlider.value = String(normalized);
   dom.simulationSeverityValue.textContent = `${normalized}%`;
   state.simulationSeverityPercent = normalized;
+  persistUserSettings();
   return normalized;
 }
 
@@ -882,6 +1011,7 @@ function syncGlobalCompare(percent) {
 
   const cards = [...dom.simGrid.querySelectorAll('.sim-card')];
   cards.forEach((card) => syncSingleCompareControl(card, normalized, { updateLabel: true }));
+  persistUserSettings();
 }
 
 function setSimCardRank(card, rankNumber) {
@@ -1003,6 +1133,27 @@ function applyTopImpactFilter({ announce = false } = {}) {
   }
 }
 
+function updateTopImpactPreviewButton() {
+  if (!dom.openTopImpactBtn) {
+    return;
+  }
+
+  const topImpact = getTopImpactEntry();
+  if (!topImpact || !state.hasRenderedSource) {
+    dom.openTopImpactBtn.disabled = true;
+    dom.openTopImpactBtn.textContent = 'Inspect highest-impact simulation';
+    dom.openTopImpactBtn.setAttribute('aria-label', 'Inspect highest-impact simulation');
+    return;
+  }
+
+  dom.openTopImpactBtn.disabled = false;
+  dom.openTopImpactBtn.textContent = `Inspect ${topImpact.label}`;
+  dom.openTopImpactBtn.setAttribute(
+    'aria-label',
+    `Inspect highest-impact simulation: ${topImpact.label}`,
+  );
+}
+
 function toggleTopImpactFilter() {
   if (!state.hasRenderedSource || !state.modeImpacts.length) {
     setMessage('Render simulations first before filtering by impact.', 'info');
@@ -1016,6 +1167,32 @@ function toggleTopImpactFilter() {
 
   state.showTopImpactOnly = !state.showTopImpactOnly;
   applyTopImpactFilter({ announce: true });
+}
+
+function openTopImpactPreview() {
+  const topImpact = getTopImpactEntry();
+  if (!topImpact) {
+    setMessage('Render simulations first to generate a top-impact ranking.', 'info');
+    return;
+  }
+
+  const card = dom.simGrid.querySelector(`[data-mode="${topImpact.modeId}"]`);
+  if (!card) {
+    setMessage('Highest-impact simulation card is not available right now.', 'error');
+    return;
+  }
+
+  const canvas = card.querySelector('.sim-canvas');
+  if (!canvas || !canvas.width || !canvas.height) {
+    setMessage('Highest-impact simulation is not ready yet. Render simulations first.', 'info');
+    return;
+  }
+
+  openPreviewModal({
+    modeId: topImpact.modeId,
+    label: topImpact.label,
+    canvas,
+  });
 }
 
 function setControlState(enabled) {
@@ -1376,6 +1553,7 @@ function syncHexWithPicker(picker, hexInput, label) {
   picker.addEventListener('input', (event) => {
     hexInput.value = event.target.value.toUpperCase();
     clearContrastValidation();
+    persistUserSettings();
   });
 
   hexInput.addEventListener('input', () => {
@@ -1390,6 +1568,7 @@ function syncHexWithPicker(picker, hexInput, label) {
       hexInput.value = normalized.toUpperCase();
       picker.value = normalized;
       clearContrastValidation();
+      persistUserSettings();
       return;
     }
 
@@ -1580,6 +1759,7 @@ async function renderAll() {
     reorderSimulationCardsByImpact(state.modeImpacts);
     setImpactSummary(sortedByImpact);
     applyTopImpactFilter();
+    updateTopImpactPreviewButton();
 
   const topImpact = sortedByImpact[0];
     if (topImpact) {
@@ -1605,6 +1785,7 @@ async function renderAll() {
     if (!state.modeImpacts.length) {
       setImpactSummary([]);
     }
+    updateTopImpactPreviewButton();
     setSimPlaceholderVisible(!state.hasRenderedSource);
     if (shouldRerenderSeverity) {
       queueSimulationSeverityRerender();
@@ -2115,6 +2296,7 @@ function renderSuggestions() {
         dom.contrastBg.value = pair.background;
         dom.contrastTextHex.value = pair.text.toUpperCase();
         dom.contrastBgHex.value = pair.background.toUpperCase();
+        persistUserSettings();
 
         let copied = false;
         try {
@@ -2294,6 +2476,7 @@ function init() {
   dom.downloadTopImpactBtn?.addEventListener('click', downloadTopImpactPack);
   dom.downloadReportBtn?.addEventListener('click', downloadAccessibilityReport);
   dom.downloadPackageBtn?.addEventListener('click', downloadSubmissionPackage);
+  dom.openTopImpactBtn?.addEventListener('click', openTopImpactPreview);
   if (dom.globalCompareSlider) {
     syncGlobalCompare(dom.globalCompareSlider.value || COMPARE_DEFAULT_PERCENT);
     dom.globalCompareSlider.addEventListener('input', (event) => {
@@ -2347,15 +2530,22 @@ function init() {
 
   syncHexWithPicker(dom.contrastText, dom.contrastTextHex, 'Text');
   syncHexWithPicker(dom.contrastBg, dom.contrastBgHex, 'Background');
-  dom.contrastText.addEventListener('change', renderContrastResult);
-  dom.contrastBg.addEventListener('change', renderContrastResult);
-  if (dom.contrastLargeText) {
-    dom.contrastLargeText.checked = false;
-  dom.contrastLargeText.addEventListener('change', () => {
-    if (state.lastContrastResult) {
-      renderContrastResult();
-    }
+  dom.contrastText.addEventListener('change', () => {
+    persistUserSettings();
+    renderContrastResult();
   });
+  dom.contrastBg.addEventListener('change', () => {
+    persistUserSettings();
+    renderContrastResult();
+  });
+  if (dom.contrastLargeText) {
+    dom.contrastLargeText.addEventListener('change', () => {
+      persistUserSettings();
+      if (state.lastContrastResult) {
+        renderContrastResult();
+      }
+    });
+  }
 
   dom.pickTextColorBtn?.addEventListener('click', () => startColorPicker(COLOR_PICKER_TARGET_TEXT));
   dom.pickBgColorBtn?.addEventListener('click', () =>
@@ -2399,6 +2589,11 @@ function init() {
   dom.contrastBg.value = '#ffffff';
   dom.contrastTextHex.value = '#0F172A';
   dom.contrastBgHex.value = '#FFFFFF';
+  if (dom.contrastLargeText) {
+    dom.contrastLargeText.checked = false;
+  }
+
+  applyPersistedUserSettings();
 
   renderContrastResult();
   setMessage('Upload an image or use a demo to begin.', 'info');

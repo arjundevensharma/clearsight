@@ -34,6 +34,7 @@ const AAA_THRESHOLD_DEFAULT = 7;
 const COLOR_PICKER_TARGET_TEXT = 'text';
 const COLOR_PICKER_TARGET_BACKGROUND = 'background';
 const COLOR_PICKER_SOURCE_CLASS = 'is-picking-color';
+const SETTINGS_STORAGE_KEY = 'clearsight-settings-v1';
 
 const state = {
   sourceImage: null,
@@ -54,6 +55,85 @@ const state = {
 
 let simulationSeverityRerenderTimer = null;
 let modalReturnFocusElement = null;
+
+function getStoredSettings() {
+  try {
+    if (typeof localStorage === 'undefined') {
+      return null;
+    }
+
+    const raw = localStorage.getItem(SETTINGS_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') {
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function persistUserSettings() {
+  try {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+
+    const payload = {
+      globalComparePercent: clampComparePercent(dom.globalCompareSlider?.value || COMPARE_DEFAULT_PERCENT),
+      simulationSeverityPercent: clampSeverityPercent(
+        state.simulationSeverityPercent || dom.simulationSeveritySlider?.value || SIMULATION_SEVERITY_DEFAULT_PERCENT,
+      ),
+      contrastTextHex: normalizeHexInput(dom.contrastTextHex?.value || dom.contrastText?.value),
+      contrastBgHex: normalizeHexInput(dom.contrastBgHex?.value || dom.contrastBg?.value),
+      largeTextMode: Boolean(dom.contrastLargeText?.checked),
+    };
+
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(payload));
+  } catch {
+    // Ignore storage failures; persistence is optional.
+  }
+}
+
+function applyPersistedUserSettings() {
+  const settings = getStoredSettings();
+  if (!settings || typeof settings !== 'object') {
+    return;
+  }
+
+  if (typeof settings.globalComparePercent === 'number') {
+    syncGlobalCompare(settings.globalComparePercent);
+  }
+
+  if (typeof settings.simulationSeverityPercent === 'number') {
+    syncSimulationSeverity(settings.simulationSeverityPercent);
+  }
+
+  const textHex = normalizeHexInput(settings.contrastTextHex);
+  if (textHex) {
+    dom.contrastText.value = textHex;
+    if (dom.contrastTextHex) {
+      dom.contrastTextHex.value = textHex.toUpperCase();
+    }
+  }
+
+  const bgHex = normalizeHexInput(settings.contrastBgHex);
+  if (bgHex) {
+    dom.contrastBg.value = bgHex;
+    if (dom.contrastBgHex) {
+      dom.contrastBgHex.value = bgHex.toUpperCase();
+    }
+  }
+
+  if (dom.contrastLargeText && typeof settings.largeTextMode === 'boolean') {
+    dom.contrastLargeText.checked = settings.largeTextMode;
+  }
+}
 
 const cvdModes = CVD_MODES.filter((mode) => mode.id !== 'normal');
 const extraModes = [
@@ -439,11 +519,13 @@ function setContrastColor(target, hexColor) {
   if (target === COLOR_PICKER_TARGET_TEXT) {
     dom.contrastText.value = hexColor;
     dom.contrastTextHex.value = hexColor.toUpperCase();
+    persistUserSettings();
     return;
   }
 
   dom.contrastBg.value = hexColor;
   dom.contrastBgHex.value = hexColor.toUpperCase();
+  persistUserSettings();
 }
 
 function getSourceCanvasPixelColor(event) {
@@ -816,12 +898,14 @@ function syncSimulationSeverity(percent) {
   const normalized = clampSeverityPercent(percent);
   if (!dom.simulationSeveritySlider || !dom.simulationSeverityValue) {
     state.simulationSeverityPercent = normalized;
+    persistUserSettings();
     return normalized;
   }
 
   dom.simulationSeveritySlider.value = String(normalized);
   dom.simulationSeverityValue.textContent = `${normalized}%`;
   state.simulationSeverityPercent = normalized;
+  persistUserSettings();
   return normalized;
 }
 
@@ -927,6 +1011,7 @@ function syncGlobalCompare(percent) {
 
   const cards = [...dom.simGrid.querySelectorAll('.sim-card')];
   cards.forEach((card) => syncSingleCompareControl(card, normalized, { updateLabel: true }));
+  persistUserSettings();
 }
 
 function setSimCardRank(card, rankNumber) {
@@ -1468,6 +1553,7 @@ function syncHexWithPicker(picker, hexInput, label) {
   picker.addEventListener('input', (event) => {
     hexInput.value = event.target.value.toUpperCase();
     clearContrastValidation();
+    persistUserSettings();
   });
 
   hexInput.addEventListener('input', () => {
@@ -1482,6 +1568,7 @@ function syncHexWithPicker(picker, hexInput, label) {
       hexInput.value = normalized.toUpperCase();
       picker.value = normalized;
       clearContrastValidation();
+      persistUserSettings();
       return;
     }
 
@@ -2209,6 +2296,7 @@ function renderSuggestions() {
         dom.contrastBg.value = pair.background;
         dom.contrastTextHex.value = pair.text.toUpperCase();
         dom.contrastBgHex.value = pair.background.toUpperCase();
+        persistUserSettings();
 
         let copied = false;
         try {
@@ -2442,15 +2530,22 @@ function init() {
 
   syncHexWithPicker(dom.contrastText, dom.contrastTextHex, 'Text');
   syncHexWithPicker(dom.contrastBg, dom.contrastBgHex, 'Background');
-  dom.contrastText.addEventListener('change', renderContrastResult);
-  dom.contrastBg.addEventListener('change', renderContrastResult);
-  if (dom.contrastLargeText) {
-    dom.contrastLargeText.checked = false;
-  dom.contrastLargeText.addEventListener('change', () => {
-    if (state.lastContrastResult) {
-      renderContrastResult();
-    }
+  dom.contrastText.addEventListener('change', () => {
+    persistUserSettings();
+    renderContrastResult();
   });
+  dom.contrastBg.addEventListener('change', () => {
+    persistUserSettings();
+    renderContrastResult();
+  });
+  if (dom.contrastLargeText) {
+    dom.contrastLargeText.addEventListener('change', () => {
+      persistUserSettings();
+      if (state.lastContrastResult) {
+        renderContrastResult();
+      }
+    });
+  }
 
   dom.pickTextColorBtn?.addEventListener('click', () => startColorPicker(COLOR_PICKER_TARGET_TEXT));
   dom.pickBgColorBtn?.addEventListener('click', () =>
@@ -2494,6 +2589,11 @@ function init() {
   dom.contrastBg.value = '#ffffff';
   dom.contrastTextHex.value = '#0F172A';
   dom.contrastBgHex.value = '#FFFFFF';
+  if (dom.contrastLargeText) {
+    dom.contrastLargeText.checked = false;
+  }
+
+  applyPersistedUserSettings();
 
   renderContrastResult();
   setMessage('Upload an image or use a demo to begin.', 'info');
