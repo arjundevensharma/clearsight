@@ -47,6 +47,7 @@ The project is intentionally scoped for a one-day build:
 - [x] Add single-click submission package export that downloads rendered visuals, ranked contact sheet, and accessibility report together.
 - [x] Add an accessibility health summary panel combining top-impact simulation delta and contrast status.
 - [x] Add global simulation intensity slider to tune matrix/filter severity across all preview modes.
+- [x] Add one-click top-impact export pack for source + highest-impact simulations with a compact contact sheet.
 
 ## Architecture
 ### File layout

@@ -68,6 +68,7 @@ const dom = {
   downloadAllBtn: document.getElementById('downloadAllBtn'),
   downloadContactBtn: document.getElementById('downloadContactBtn'),
   downloadReportBtn: document.getElementById('downloadReportBtn'),
+  downloadTopImpactBtn: document.getElementById('downloadTopImpactBtn'),
   downloadPackageBtn: document.getElementById('downloadPackageBtn'),
   message: document.getElementById('message'),
   sourceCanvas: document.getElementById('sourceCanvas'),
@@ -335,6 +336,9 @@ function setImageControlsEnabled(enabled) {
   dom.downloadAllBtn.disabled = !enabled || !state.hasRenderedSource;
   if (dom.downloadContactBtn) {
     dom.downloadContactBtn.disabled = !enabled || !state.hasRenderedSource;
+  }
+  if (dom.downloadTopImpactBtn) {
+    dom.downloadTopImpactBtn.disabled = !enabled || !state.hasRenderedSource;
   }
   if (dom.downloadReportBtn) {
     dom.downloadReportBtn.disabled = !enabled || !state.hasRenderedSource;
@@ -1199,7 +1203,7 @@ function downloadAllPreviews() {
   }
 }
 
-function collectCompletedExportCards() {
+function collectCompletedExportCards({ limitByImpact = null } = {}) {
   const source = {
     id: 'source',
     label: 'Source',
@@ -1230,8 +1234,31 @@ function collectCompletedExportCards() {
       };
     })
     .filter(Boolean);
+  const hasLimit =
+    Number.isFinite(Number(limitByImpact)) && Number(limitByImpact) > 0;
+  const safeLimit = hasLimit ? Math.floor(Number(limitByImpact)) : 0;
+  const orderedSimulations = hasLimit
+    ? [...simulations].sort((a, b) => {
+        const aHasImpact = typeof a.impactPercent === 'number';
+        const bHasImpact = typeof b.impactPercent === 'number';
+        if (aHasImpact && bHasImpact && a.impactPercent !== b.impactPercent) {
+          return b.impactPercent - a.impactPercent;
+        }
+        if (aHasImpact && !bHasImpact) {
+          return -1;
+        }
+        if (!aHasImpact && bHasImpact) {
+          return 1;
+        }
+        return 0;
+      }).slice(0, safeLimit)
+    : simulations;
 
-  return [source, ...simulations].filter((entry) => entry.canvas?.width && entry.canvas?.height);
+  return [source, ...orderedSimulations].filter((entry) => entry.canvas?.width && entry.canvas?.height);
+}
+
+function makeTopImpactExportFileName(mode = 'source') {
+  return `${getSafeFileName(state.sourceName || 'clearsight-source')}-top-impact-${mode}.png`;
 }
 
 function buildContactSheet(entries) {
@@ -1362,6 +1389,41 @@ function downloadContactSheet() {
     const contactSheet = buildContactSheet(entries);
     downloadCanvasAsImage(contactSheet, makeExportFileName('contact-sheet'));
     setMessage(`Exported contact sheet (${entries.length} tiles).`, 'success');
+  } catch (error) {
+    setMessage(error.message, 'error');
+  }
+}
+
+function downloadTopImpactPack() {
+  if (state.isRendering) {
+    setMessage('Please wait for rendering to finish before generating the top-impact pack.', 'info');
+    return;
+  }
+  if (!state.hasRenderedSource) {
+    setMessage('Render the source and simulations first before exporting top-impact previews.', 'error');
+    return;
+  }
+
+  const entries = collectCompletedExportCards({ limitByImpact: 3 });
+  const simulationEntries = entries.filter((entry) => entry.id !== 'source');
+
+  if (!simulationEntries.length) {
+    setMessage('Render at least one simulation before creating a top-impact pack.', 'error');
+    return;
+  }
+
+  try {
+    downloadCanvasAsImage(dom.sourceCanvas, makeTopImpactExportFileName('source'));
+    simulationEntries.forEach((entry) => {
+      downloadCanvasAsImage(entry.canvas, makeTopImpactExportFileName(entry.id));
+    });
+
+    const contactSheet = buildContactSheet(entries);
+    downloadCanvasAsImage(contactSheet, makeTopImpactExportFileName('contact-sheet'));
+    setMessage(
+      `Exported top-impact pack: source plus ${simulationEntries.length} high-priority simulation${simulationEntries.length === 1 ? '' : 's'}.`,
+      'success',
+    );
   } catch (error) {
     setMessage(error.message, 'error');
   }
@@ -1764,6 +1826,7 @@ function init() {
   });
   dom.downloadAllBtn.addEventListener('click', downloadAllPreviews);
   dom.downloadContactBtn?.addEventListener('click', downloadContactSheet);
+  dom.downloadTopImpactBtn?.addEventListener('click', downloadTopImpactPack);
   dom.downloadReportBtn?.addEventListener('click', downloadAccessibilityReport);
   dom.downloadPackageBtn?.addEventListener('click', downloadSubmissionPackage);
   if (dom.globalCompareSlider) {
