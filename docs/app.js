@@ -194,6 +194,7 @@ const dom = {
   contrastBtn: document.getElementById('contrastBtn'),
   suggestBtn: document.getElementById('suggestBtn'),
   suggestionWrap: document.getElementById('suggestions'),
+  copySummaryBtn: document.getElementById('copySummaryBtn'),
   simPlaceholder: document.getElementById('simEmptyState'),
   impactSummary: document.getElementById('impactSummary'),
   contrastValidation: document.getElementById('contrastValidation'),
@@ -2500,6 +2501,29 @@ async function copyDemoText(kind) {
   );
 }
 
+async function copyJudgeSummary() {
+  if (state.isRendering) {
+    setDemoCopyStatus('Finish rendering before copying the judge summary.');
+    return;
+  }
+
+  if (!state.hasRenderedSource || !state.modeImpacts.length) {
+    setDemoCopyStatus(
+      'Render an image and simulations before copying the judge summary.',
+    );
+    return;
+  }
+
+  const markdown = buildJudgeSummaryMarkdown();
+  const copied = await copyTextToClipboard(markdown);
+  if (!copied) {
+    setDemoCopyStatus('Clipboard copy is not supported in this browser. Highlight text manually if needed.');
+    return;
+  }
+
+  setDemoCopyStatus('Judge summary copied to clipboard.');
+}
+
 function readImageAndRender(file) {
   clearWorkspace({ notify: false });
   return withImageFromFile(file)
@@ -2665,6 +2689,10 @@ function init() {
   dom.copyChecklistBtn?.addEventListener('click', () => {
     clearDemoCopyStatus();
     copyDemoText('checklist').catch(() => setDemoCopyStatus('Clipboard copy was interrupted.'));
+  });
+  dom.copySummaryBtn?.addEventListener('click', () => {
+    clearDemoCopyStatus();
+    copyJudgeSummary().catch(() => setDemoCopyStatus('Clipboard copy was interrupted.'));
   });
 
   if (dom.previewModalCloseBtn) {
