@@ -2577,7 +2577,6 @@ function init() {
     );
     clearColorPicker();
   });
-  }
 
   window.addEventListener('keydown', (event) => {
     runKeyboardShortcut(event);
