@@ -46,6 +46,7 @@ The project is intentionally scoped for a one-day build:
 - [x] Add workspace reset control to clear source, simulations, and contrast state between demo iterations.
 - [x] Add single-click submission package export that downloads rendered visuals, ranked contact sheet, and accessibility report together.
 - [x] Add an accessibility health summary panel combining top-impact simulation delta and contrast status.
+- [x] Add global simulation intensity slider to tune matrix/filter severity across all preview modes.
 
 ## Architecture
 ### File layout

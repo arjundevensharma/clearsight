@@ -451,6 +451,12 @@ button:hover:not(:disabled) {
   accent-color: var(--accent);
 }
 
+#simulationSeveritySlider {
+  flex: 1;
+  min-width: 160px;
+  accent-color: var(--accent);
+}
+
 .sim-compare-global .sim-compare-value {
   min-width: 2.75rem;
 }

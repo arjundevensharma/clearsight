@@ -21,6 +21,7 @@ const IMPACT_LEVEL = {
   medium: 10,
 };
 const COMPARE_DEFAULT_PERCENT = 50;
+const SIMULATION_SEVERITY_DEFAULT_PERCENT = 100;
 const CONTACT_SHEET_MAX_TILE_WIDTH = 420;
 const CONTACT_SHEET_COLUMNS = 3;
 const CONTACT_SHEET_GUTTER = 20;
@@ -36,6 +37,7 @@ const state = {
   modeImpacts: [],
   lastContrastResult: null,
   lastSuggestionPairs: [],
+  simulationSeverityPercent: SIMULATION_SEVERITY_DEFAULT_PERCENT,
 };
 
 const cvdModes = CVD_MODES.filter((mode) => mode.id !== 'normal');
@@ -89,6 +91,8 @@ const dom = {
   demoCopyStatus: document.getElementById('demoCopyStatus'),
   globalCompareSlider: document.getElementById('globalCompareSlider'),
   globalCompareValue: document.getElementById('globalCompareValue'),
+  simulationSeveritySlider: document.getElementById('simulationSeveritySlider'),
+  simulationSeverityValue: document.getElementById('simulationSeverityValue'),
 };
 
 function getImpactLevel(impactPercent) {
@@ -341,6 +345,9 @@ function setImageControlsEnabled(enabled) {
   if (dom.globalCompareSlider) {
     dom.globalCompareSlider.disabled = !enabled;
   }
+  if (dom.simulationSeveritySlider) {
+    dom.simulationSeveritySlider.disabled = !enabled;
+  }
   if (dom.clearWorkspaceBtn) {
     dom.clearWorkspaceBtn.disabled = !enabled || !state.sourceImage;
   }
@@ -425,6 +432,61 @@ function clampComparePercent(value) {
     return COMPARE_DEFAULT_PERCENT;
   }
   return Math.min(100, Math.max(0, Math.round(numeric)));
+}
+
+function clampSeverityPercent(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return SIMULATION_SEVERITY_DEFAULT_PERCENT;
+  }
+  return Math.min(100, Math.max(0, Math.round(numeric)));
+}
+
+function syncSimulationSeverity(percent) {
+  const normalized = clampSeverityPercent(percent);
+  if (!dom.simulationSeveritySlider || !dom.simulationSeverityValue) {
+    state.simulationSeverityPercent = normalized;
+    return normalized;
+  }
+
+  dom.simulationSeveritySlider.value = String(normalized);
+  dom.simulationSeverityValue.textContent = `${normalized}%`;
+  state.simulationSeverityPercent = normalized;
+  return normalized;
+}
+
+function getSimulationSeverityPercent() {
+  return syncSimulationSeverity(dom.simulationSeveritySlider?.value ?? state.simulationSeverityPercent);
+}
+
+function clampAndBlendChannel(baseChannel, transformedChannel, intensityPercent) {
+  const blended = baseChannel + (transformedChannel - baseChannel) * (intensityPercent / 100);
+  return Math.min(255, Math.max(0, Math.round(blended)));
+}
+
+function applySimulationIntensity(baseData, candidateData, intensityPercent = SIMULATION_SEVERITY_DEFAULT_PERCENT) {
+  const normalized = clampSeverityPercent(intensityPercent);
+  if (normalized === 100) {
+    return;
+  }
+
+  if (!baseData || !candidateData || baseData.length !== candidateData.length) {
+    throw new Error('Cannot apply simulation intensity: source and simulation data are not aligned.');
+  }
+
+  if (normalized === 0) {
+    for (let i = 0; i < baseData.length; i += 1) {
+      candidateData[i] = baseData[i];
+    }
+    return;
+  }
+
+  for (let i = 0; i < baseData.length; i += 4) {
+    candidateData[i] = clampAndBlendChannel(baseData[i], candidateData[i], normalized);
+    candidateData[i + 1] = clampAndBlendChannel(baseData[i + 1], candidateData[i + 1], normalized);
+    candidateData[i + 2] = clampAndBlendChannel(baseData[i + 2], candidateData[i + 2], normalized);
+    candidateData[i + 3] = baseData[i + 3];
+  }
 }
 
 function syncSingleCompareControl(card, percent, { updateLabel = false } = {}) {
@@ -920,6 +982,7 @@ async function renderMode(mode, sourceSize) {
   const sourceCtx = sourceCanvas?.getContext('2d', { willReadFrequently: true });
   let impactPercent = null;
   let impactLevel = 'neutral';
+  const simulationSeverity = getSimulationSeverityPercent();
 
   canvas.width = sourceSize.width;
   canvas.height = sourceSize.height;
@@ -960,12 +1023,14 @@ async function renderMode(mode, sourceSize) {
       }
 
       transformImageDataWithMatrix(transformedData, mode.matrix);
+      applySimulationIntensity(state.sourceImageData?.data, transformedData.data, simulationSeverity);
       ctx.putImageData(transformedData, 0, 0);
       impactPercent = calculateImpactPercent(sourceData, transformedData.data);
     } else if (mode.kind === 'filter') {
       ctx.filter = mode.filter;
       ctx.drawImage(state.sourceImage, 0, 0, sourceSize.width, sourceSize.height);
       const filteredData = ctx.getImageData(0, 0, sourceSize.width, sourceSize.height);
+      applySimulationIntensity(state.sourceImageData?.data, filteredData.data, simulationSeverity);
       impactPercent = calculateImpactPercent(state.sourceImageData?.data, filteredData.data);
       ctx.filter = 'none';
     } else {
@@ -1030,8 +1095,9 @@ async function renderAll() {
   dom.processBtn.textContent = 'Rendering...';
   clearMessage();
   clearContrastValidation();
+  const simulationSeverity = syncSimulationSeverity(dom.simulationSeveritySlider?.value || SIMULATION_SEVERITY_DEFAULT_PERCENT);
   dom.sourceInfo.textContent = 'Rendering source...';
-  setMessage('Rendering simulation previews. This may take a second for large images.', 'info');
+  setMessage(`Rendering simulation previews at ${simulationSeverity}% intensity.`, 'info');
 
   try {
     const sourceSize = getRenderSize(state.sourceImage);
@@ -1383,6 +1449,7 @@ function buildAccessibilityReport() {
       },
       hasRenderedSource: Boolean(state.hasRenderedSource),
     },
+    simulationIntensity: state.simulationSeverityPercent || SIMULATION_SEVERITY_DEFAULT_PERCENT,
     simulations: simulationImpacts,
     topImpactMode: topImpact,
     contrast: {
@@ -1703,6 +1770,15 @@ function init() {
     syncGlobalCompare(dom.globalCompareSlider.value || COMPARE_DEFAULT_PERCENT);
     dom.globalCompareSlider.addEventListener('input', (event) => {
       syncGlobalCompare(event.target.value);
+    });
+  }
+  if (dom.simulationSeveritySlider) {
+    syncSimulationSeverity(dom.simulationSeveritySlider.value || SIMULATION_SEVERITY_DEFAULT_PERCENT);
+    dom.simulationSeveritySlider.addEventListener('input', () => {
+      const severity = syncSimulationSeverity(dom.simulationSeveritySlider.value || SIMULATION_SEVERITY_DEFAULT_PERCENT);
+      if (state.sourceImage && state.hasRenderedSource && !state.isRendering) {
+        setMessage(`Simulation intensity set to ${severity}%. Re-render simulations to apply.`, 'info');
+      }
     });
   }
   dom.contrastBtn.addEventListener('click', renderContrastResult);
