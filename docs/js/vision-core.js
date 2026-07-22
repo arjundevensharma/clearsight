@@ -84,7 +84,13 @@ export const CVD_MODES = [
 const clamp = (value) => Math.max(0, Math.min(255, Math.round(value)));
 
 export function transformImageDataWithMatrix(imageData, matrix) {
-  if (!imageData || !imageData.data || !matrix || matrix.length !== 3) {
+  if (!imageData || !imageData.data || !matrix || !Array.isArray(matrix) || matrix.length !== 3) {
+    throw new Error('Invalid image data or matrix provided for color transformation.');
+  }
+  if (!Array.isArray(matrix[0]) || !Array.isArray(matrix[1]) || !Array.isArray(matrix[2])) {
+    throw new Error('Invalid image data or matrix provided for color transformation.');
+  }
+  if (matrix.some((row) => row.length !== 3 || row.some((value) => typeof value !== 'number' || !Number.isFinite(value)))) {
     throw new Error('Invalid image data or matrix provided for color transformation.');
   }
 
@@ -112,7 +118,7 @@ export function parseHexColor(value) {
     throw new Error('Color input must be a string.');
   }
 
-  const clean = value.trim().replace('#', '').toLowerCase();
+  const clean = value.trim().replace(/^#/, '').toLowerCase();
 
   if (!/^([0-9a-f]{3}|[0-9a-f]{6})$/i.test(clean)) {
     throw new Error(`Invalid hex color: ${value}`);

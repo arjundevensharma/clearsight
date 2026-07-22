@@ -15,8 +15,14 @@ test('parseHexColor accepts short and full hex', () => {
   assert.deepEqual(parseHexColor('112233'), { r: 17, g: 34, b: 51, hex: '#112233' });
 });
 
+test('parseHexColor throws for invalid values', () => {
+  assert.throws(() => parseHexColor('xyz'), /Invalid hex color/i);
+  assert.throws(() => parseHexColor('#12345'), /Invalid hex color/i);
+  assert.throws(() => parseHexColor(''), /Invalid hex color/i);
+});
+
 test('rgbToHex normalizes and pads values', () => {
-  assert.equal(rgbToHex({ r: -1, g: 255, b: 16.9 }), '#00ff10');
+  assert.equal(rgbToHex({ r: -1, g: 255, b: 16.9 }), '#00ff11');
 });
 
 test('contrast for black and white is maximum of visible combinations', () => {
@@ -51,8 +57,18 @@ test('each CVD mode has a valid transform matrix', () => {
   }
 });
 
+test('transformImageDataWithMatrix throws for invalid matrix', () => {
+  const source = { data: new Uint8ClampedArray([0, 0, 0, 255]), width: 1, height: 1 };
+  assert.throws(() => transformImageDataWithMatrix(source, [[1, 0], [0, 1], [0, 0]]), /Invalid image data or matrix/i);
+  assert.throws(() => transformImageDataWithMatrix(source, [[1, 0, 0], [0, 1, 0], ['a', 0, 0]]), /Invalid image data or matrix/i);
+});
+
 test('transformImageDataWithMatrix transforms image data in place', () => {
-  const source = new ImageData(new Uint8ClampedArray([255, 0, 0, 255, 0, 255, 0, 255]), 1, 2);
+  const source = {
+    data: new Uint8ClampedArray([255, 0, 0, 255, 0, 255, 0, 255]),
+    width: 1,
+    height: 2,
+  };
   const mode = CVD_MODES.find(({ id }) => id === 'protanopia');
   const output = transformImageDataWithMatrix(source, mode.matrix);
   assert.equal(output.data[0], source.data[0]);

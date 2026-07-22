@@ -143,9 +143,30 @@ button:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-bottom: 0.75rem;
+}
+
+.tiny-btn {
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
 .muted {
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.field-error {
+  color: #9f1239;
+  font-size: 0.9rem;
+  min-height: 1.05rem;
+  margin: 0.2rem 0 0.65rem;
 }
 
 .canvas-wrap {
@@ -176,6 +197,13 @@ button:hover:not(:disabled) {
   padding: 0.6rem;
 }
 
+.sim-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
 .sim-canvas {
   width: 100%;
   aspect-ratio: 16 / 9;
@@ -187,13 +215,15 @@ button:hover:not(:disabled) {
 
 .sim-title {
   font-weight: 700;
-  margin-bottom: 0.4rem;
+  margin: 0;
+  font-size: 0.95rem;
 }
 
 .sim-status {
   margin: 0.5rem 0 0;
   color: var(--muted);
   min-height: 1.2rem;
+  font-size: 0.9rem;
 }
 
 .sim-status.loading {
@@ -265,12 +295,12 @@ input[type='text'] {
   border-radius: 10px;
   padding: 0.65rem;
   display: grid;
+  gap: 0.45rem;
   text-align: left;
-  gap: 0.2rem;
   background: var(--bg);
   position: relative;
   color: #0f172a;
-  transition: transform 120ms ease;
+  transition: transform 120ms ease, border-color 120ms ease;
 }
 
 .palette-card::before {
@@ -284,6 +314,30 @@ input[type='text'] {
 
 .palette-card:hover {
   transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--accent) 55%, white);
+}
+
+.palette-preview {
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--text), var(--bg));
+}
+
+.palette-apply-btn {
+  justify-self: start;
+  width: 100%;
+  background: #0f172a;
+  font-size: 0.85rem;
+}
+
+.sim-actions,
+.control-actions {
+  margin-bottom: 0.45rem;
+}
+
+.sim-actions .button-row,
+.control-actions .button-row {
+  margin-bottom: 0;
 }
 
 @media (max-width: 800px) {

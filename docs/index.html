@@ -32,6 +32,7 @@
           <button id="demoUi" type="button">Load demo UI</button>
           <button id="demoDashboard" type="button">Load demo dashboard</button>
           <button id="processBtn" type="button">Render simulations</button>
+          <button id="downloadSourceBtn" type="button">Download source preview</button>
         </div>
         <p id="exportNote" class="muted"></p>
       </section>
@@ -46,6 +47,9 @@
 
       <section class="card" aria-labelledby="sim-title">
         <h2 id="sim-title">3) Accessibility simulations</h2>
+        <div class="button-row">
+          <button id="downloadAllBtn" type="button">Download all previews</button>
+        </div>
         <div id="simGrid" class="sim-grid" aria-live="polite"></div>
       </section>
 
@@ -67,6 +71,7 @@
             </div>
           </div>
         </div>
+        <p id="contrastValidation" class="field-error" role="status" aria-live="polite"></p>
         <div class="button-row">
           <button id="contrastBtn" type="button">Check contrast</button>
           <button id="suggestBtn" type="button">Suggest accessible palette</button>
