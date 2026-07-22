@@ -175,6 +175,7 @@ const dom = {
   downloadAllBtn: document.getElementById('downloadAllBtn'),
   downloadContactBtn: document.getElementById('downloadContactBtn'),
   downloadReportBtn: document.getElementById('downloadReportBtn'),
+  downloadSummaryBtn: document.getElementById('downloadSummaryBtn'),
   downloadTopImpactBtn: document.getElementById('downloadTopImpactBtn'),
   downloadPackageBtn: document.getElementById('downloadPackageBtn'),
   message: document.getElementById('message'),
@@ -670,6 +671,7 @@ function runKeyboardShortcut(event) {
     d: () => runIfAvailable(dom.demoDashboard, 'Load demo dashboard', () => dom.demoDashboard.click()),
     c: () => runIfAvailable(dom.contrastBtn, 'Contrast check', () => dom.contrastBtn.click()),
     a: () => runIfAvailable(dom.suggestBtn, 'Palette suggestion', () => dom.suggestBtn.click()),
+    j: () => runIfAvailable(dom.downloadSummaryBtn, 'Judge summary export', () => dom.downloadSummaryBtn.click()),
     p: () => openTopImpactPreview(),
     t: () => startColorPicker(COLOR_PICKER_TARGET_TEXT),
     b: () => startColorPicker(COLOR_PICKER_TARGET_BACKGROUND),
@@ -830,6 +832,9 @@ function setImageControlsEnabled(enabled) {
   }
   if (dom.downloadReportBtn) {
     dom.downloadReportBtn.disabled = !enabled || !state.hasRenderedSource;
+  }
+  if (dom.downloadSummaryBtn) {
+    dom.downloadSummaryBtn.disabled = !enabled || !state.hasRenderedSource;
   }
   if (dom.downloadPackageBtn) {
     dom.downloadPackageBtn.disabled = !enabled || !state.hasRenderedSource;
@@ -1281,8 +1286,13 @@ function showSourceMeta(fileName, width, height) {
 }
 
 function makeExportFileName(mode = 'source', extension = 'png') {
-  const safeMode = extension === 'json' ? 'json' : 'png';
-  return `${getSafeFileName(state.sourceName || 'clearsight-source')}-${mode}.${safeMode}`;
+  const safeExtension = String(extension || 'png')
+    .trim()
+    .replace(/^\./, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '');
+
+  return `${getSafeFileName(state.sourceName || 'clearsight-source')}-${mode}.${safeExtension || 'png'}`;
 }
 
 function downloadCanvasAsImage(canvas, filename) {
@@ -2243,6 +2253,56 @@ function buildAccessibilityReport() {
   };
 }
 
+function buildJudgeSummaryMarkdown() {
+  const report = buildAccessibilityReport();
+  const lines = [];
+  const sourceFile = report.source.fileName || 'Untitled source image';
+  const topImpactLine = report.topImpactMode
+    ? `- **Top impact mode:** ${report.topImpactMode.label} (${report.topImpactMode.impactPercent?.toFixed(1)}% pixel change)`
+    : '- **Top impact mode:** not available';
+  const contrastLine = report.contrast.lastChecked
+    ? `- **Contrast check:** ${report.contrast.text} / ${report.contrast.background} → ${report.contrast.lastChecked.ratio.toFixed(2)}:1 (AA ${report.contrast.lastChecked.aaThreshold.toFixed(1)} ${report.contrast.lastChecked.passesAA ? 'PASS' : 'FAIL'} · AAA ${report.contrast.lastChecked.aaaThreshold.toFixed(1)} ${report.contrast.lastChecked.passesAAA ? 'PASS' : 'FAIL'} · Large-text AA ${report.contrast.lastChecked.passesLAA ? 'PASS' : 'FAIL'})`
+    : '- **Contrast check:** not run';
+
+  lines.push('# ClearSight Judge Summary');
+  lines.push('');
+  lines.push(`Generated: ${report.generatedAt}`);
+  lines.push(`Source image: ${sourceFile}`);
+  lines.push(
+    `Rendered size: ${report.source.renderedSize.width || 0}×${report.source.renderedSize.height || 0}px`,
+  );
+  lines.push(`Simulation intensity: ${report.simulationIntensity}%`);
+  lines.push('');
+  lines.push('## Snapshot');
+  lines.push('');
+  lines.push(topImpactLine);
+  lines.push(contrastLine);
+  lines.push('');
+  lines.push('## Simulation ranking by visual delta');
+  lines.push('');
+  lines.push('| # | Mode | Pixel change | Risk |');
+  lines.push('| --- | --- | --- | --- |');
+
+  report.simulations.forEach((entry, index) => {
+    const impact = typeof entry.impactPercent === 'number' ? `${entry.impactPercent.toFixed(1)}%` : 'N/A';
+    lines.push(`| ${index + 1} | ${entry.label} | ${impact} | ${entry.impactLevel} |`);
+  });
+
+  lines.push('');
+  lines.push('## Suggested palette pairs');
+  if (report.suggestions.length > 0) {
+    report.suggestions.forEach((pair, idx) => {
+      lines.push(
+        `${idx + 1}. Text ${pair.text} / Background ${pair.background} (${pair.ratio.toFixed(2)}:1)`,
+      );
+    });
+  } else {
+    lines.push('No suggestions have been generated yet.');
+  }
+
+  return `${lines.join('\n')}\n`;
+}
+
 function downloadAccessibilityReport() {
   if (state.isRendering) {
     setMessage('Please wait for rendering to finish before exporting the report.', 'info');
@@ -2265,6 +2325,30 @@ function downloadAccessibilityReport() {
     'application/json;charset=utf-8',
   );
   setMessage(`Downloaded accessibility report (${report.simulations.length} simulations) as ${filename}.`, 'success');
+}
+
+function downloadJudgeSummary() {
+  if (state.isRendering) {
+    setMessage('Please wait for rendering to finish before generating the judge summary.', 'info');
+    return;
+  }
+  if (!state.hasRenderedSource) {
+    setMessage('Render the source and simulations first before generating the judge summary.', 'error');
+    return;
+  }
+  if (!state.modeImpacts.length) {
+    setMessage('Render simulations first before generating the judge summary.', 'error');
+    return;
+  }
+
+  try {
+    const markdown = buildJudgeSummaryMarkdown();
+    const filename = makeExportFileName('judge-summary', 'md');
+    downloadTextFile(markdown, filename, 'text/markdown;charset=utf-8');
+    setMessage(`Downloaded judge summary as ${filename}.`, 'success');
+  } catch (error) {
+    setMessage(error.message, 'error');
+  }
 }
 
 function renderContrastResult() {
@@ -2544,6 +2628,7 @@ function init() {
   dom.downloadContactBtn?.addEventListener('click', downloadContactSheet);
   dom.downloadTopImpactBtn?.addEventListener('click', downloadTopImpactPack);
   dom.downloadReportBtn?.addEventListener('click', downloadAccessibilityReport);
+  dom.downloadSummaryBtn?.addEventListener('click', downloadJudgeSummary);
   dom.downloadPackageBtn?.addEventListener('click', downloadSubmissionPackage);
   dom.openTopImpactBtn?.addEventListener('click', openTopImpactPreview);
   if (dom.globalCompareSlider) {

@@ -35,6 +35,7 @@ The project is intentionally scoped for a one-day build:
 11. Lightweight export controls for generated results (downloadable previews).
 12. Add source-image color picker controls for direct contrast text/background sampling.
 13. Add discoverable keyboard shortcut help panel with `?`/`H` toggle and shortcut legend.
+14. Add judge-ready markdown summary export for human-readable accessibility review and submission handoff.
 
 ## Session checkpoint (2026-07-22)
 - [x] Add simulation impact ranking to make high-risk vision modes immediately visible after render.
@@ -65,6 +66,7 @@ The project is intentionally scoped for a one-day build:
 - [x] Fix runtime blockers from a syntax regression by removing an extra closing brace in `docs/app.js` and `docs/current/app.js` so the app parses and runs reliably.
 - [x] Add a real-time simulation render progress rail with per-mode completion feedback.
 - [x] Add frame-friendly simulation rendering by yielding to `requestAnimationFrame` between mode passes so progress and controls remain responsive on larger images.
+- [x] Add judge summary markdown export with ranked simulations, contrast state, and suggestion payload for fast reviewer handoff.
 
 ## Architecture
 ### File layout

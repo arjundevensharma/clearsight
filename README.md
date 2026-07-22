@@ -36,7 +36,8 @@ This led to an all-client-side design: no upload chain, no backend dependency, n
 3. Compare outputs side by side to spot visibility issues.
 4. Enter text/background colors in the WCAG checker.
 5. Get AA / AAA / large-text contrast statuses and up to four suggested accessible pairs.
-6. Copy the demo script or screenshot checklist and download ready PNG previews.
+6. Download `judge summary` for a reviewer-friendly quick audit narrative.
+7. Copy the demo script or screenshot checklist and download ready PNG previews.
 
 All image processing uses canvas operations in-browser, and no image bytes are uploaded to any server.
 
@@ -57,6 +58,7 @@ Keyboard shortcuts for speed:
 - `D` load demo dashboard
 - `C` check contrast
 - `A` generate suggestions
+- `J` download judge summary
 - `P` inspect the highest-impact simulation
 - `Esc` close preview / cancel color picker
 
@@ -66,6 +68,7 @@ Expected output for submission:
 - Simulation previews for all modes
 - Ranked contact sheet (`Download contact sheet`)
 - Accessibility report (`Download accessibility report`)
+- Judge summary (`Download judge summary`)
 - Optional full package (`Download submission package`)
 
 ## Tech stack
