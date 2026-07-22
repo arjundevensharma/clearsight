@@ -72,6 +72,7 @@ The project is intentionally scoped for a one-day build:
 - [x] Add an in-app judge snapshot panel that surfaces top-impact simulation risk, contrast status, and one-click copy for quick judge handoff.
 
 - [x] Re-sync the `docs/` production bundle from `docs/current/` to ship the latest judge snapshot workflow and copy tools.
+- [x] Add accessibility report CSV export (mode-level pixel impact and contrast status) for quick spreadsheet review in judge and submission handoff flows.
 
 ## Architecture
 ### File layout

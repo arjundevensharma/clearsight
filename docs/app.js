@@ -176,6 +176,7 @@ const dom = {
   downloadContactBtn: document.getElementById('downloadContactBtn'),
   downloadReportBtn: document.getElementById('downloadReportBtn'),
   downloadSummaryBtn: document.getElementById('downloadSummaryBtn'),
+  downloadReportCsvBtn: document.getElementById('downloadReportCsvBtn'),
   downloadTopImpactBtn: document.getElementById('downloadTopImpactBtn'),
   downloadPackageBtn: document.getElementById('downloadPackageBtn'),
   message: document.getElementById('message'),
@@ -909,6 +910,9 @@ function setImageControlsEnabled(enabled) {
   }
   if (dom.downloadSummaryBtn) {
     dom.downloadSummaryBtn.disabled = !enabled || !state.hasRenderedSource;
+  }
+  if (dom.downloadReportCsvBtn) {
+    dom.downloadReportCsvBtn.disabled = !enabled || !state.hasRenderedSource;
   }
   if (dom.downloadPackageBtn) {
     dom.downloadPackageBtn.disabled = !enabled || !state.hasRenderedSource;
@@ -2333,6 +2337,59 @@ function buildAccessibilityReport() {
   };
 }
 
+function toCsvCell(value) {
+  const cell = value === null || value === undefined ? '' : String(value);
+  if (/[",\r\n]/.test(cell)) {
+    return `"${cell.replace(/"/g, '""')}"`;
+  }
+  return cell;
+}
+
+function buildAccessibilityReportCsv() {
+  const report = buildAccessibilityReport();
+  const headers = [
+    'mode_id',
+    'mode_label',
+    'impact_percent',
+    'impact_risk',
+    'source_file',
+    'rendered_width',
+    'rendered_height',
+    'simulation_intensity',
+    'contrast_text',
+    'contrast_background',
+    'contrast_ratio',
+    'passes_aa',
+    'passes_aaa',
+    'passes_large_text_aa',
+    'aa_threshold',
+    'aaa_threshold',
+    'generated_at',
+  ];
+
+  const rows = report.simulations.map((entry) => [
+    entry.id,
+    entry.label,
+    entry.impactPercent ?? '',
+    entry.impactLevel,
+    report.source.fileName || 'Untitled source image',
+    report.source.renderedSize.width || '',
+    report.source.renderedSize.height || '',
+    report.simulationIntensity,
+    report.contrast.text,
+    report.contrast.background,
+    report.contrast.lastChecked ? report.contrast.lastChecked.ratio : '',
+    report.contrast.lastChecked ? (report.contrast.lastChecked.passesAA ? 'pass' : 'fail') : '',
+    report.contrast.lastChecked ? (report.contrast.lastChecked.passesAAA ? 'pass' : 'fail') : '',
+    report.contrast.lastChecked ? (report.contrast.lastChecked.passesLAA ? 'pass' : 'fail') : '',
+    report.contrast.lastChecked ? report.contrast.lastChecked.aaThreshold : '',
+    report.contrast.lastChecked ? report.contrast.lastChecked.aaaThreshold : '',
+    report.generatedAt,
+  ]);
+
+  return `${headers.map(toCsvCell).join(',')}\n${rows.map((row) => row.map(toCsvCell).join(',')).join('\n')}\n`;
+}
+
 function buildJudgeSummaryMarkdown() {
   const report = buildAccessibilityReport();
   const lines = [];
@@ -2426,6 +2483,30 @@ function downloadJudgeSummary() {
     const filename = makeExportFileName('judge-summary', 'md');
     downloadTextFile(markdown, filename, 'text/markdown;charset=utf-8');
     setMessage(`Downloaded judge summary as ${filename}.`, 'success');
+  } catch (error) {
+    setMessage(error.message, 'error');
+  }
+}
+
+function downloadAccessibilityReportCsv() {
+  if (state.isRendering) {
+    setMessage('Please wait for rendering to finish before exporting the CSV.', 'info');
+    return;
+  }
+  if (!state.hasRenderedSource) {
+    setMessage('Render the source first before generating the CSV report.', 'error');
+    return;
+  }
+  if (!state.modeImpacts.length) {
+    setMessage('Render simulations first before generating the CSV report.', 'error');
+    return;
+  }
+
+  try {
+    const csv = buildAccessibilityReportCsv();
+    const filename = makeExportFileName('accessibility-report', 'csv');
+    downloadTextFile(csv, filename, 'text/csv;charset=utf-8');
+    setMessage(`Downloaded accessibility report CSV as ${filename}.`, 'success');
   } catch (error) {
     setMessage(error.message, 'error');
   }
@@ -2752,6 +2833,7 @@ function init() {
   dom.downloadContactBtn?.addEventListener('click', downloadContactSheet);
   dom.downloadTopImpactBtn?.addEventListener('click', downloadTopImpactPack);
   dom.downloadReportBtn?.addEventListener('click', downloadAccessibilityReport);
+  dom.downloadReportCsvBtn?.addEventListener('click', downloadAccessibilityReportCsv);
   dom.downloadSummaryBtn?.addEventListener('click', downloadJudgeSummary);
   dom.downloadPackageBtn?.addEventListener('click', downloadSubmissionPackage);
   dom.openTopImpactBtn?.addEventListener('click', openTopImpactPreview);
