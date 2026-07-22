@@ -71,6 +71,8 @@ The project is intentionally scoped for a one-day build:
 - [x] Add one-click judge summary copy action in the demo panel for fast clipboard handoff during live judging.
 - [x] Add an in-app judge snapshot panel that surfaces top-impact simulation risk, contrast status, and one-click copy for quick judge handoff.
 
+- [x] Re-sync the `docs/` production bundle from `docs/current/` to ship the latest judge snapshot workflow and copy tools.
+
 ## Architecture
 ### File layout
 - `index.html` / `style.css` / `app.js` are deployed in `docs/` for GitHub Pages.
