@@ -1,0 +1,59 @@
+# ClearSight Project Plan
+
+## Project concept
+ClearSight is a static, privacy-first accessibility utility that helps designers and developers **see** and **fix** accessibility issues in UI screenshots fast. The app lets users upload a screenshot (or use built-in demo scenes), then generates side-by-side visualizations for common vision deficiencies and low-vision conditions. It also includes a WCAG contrast checker that can validate text/background pairs and suggest accessible alternatives.
+
+The project is intentionally scoped for a one-day build:
+- One click to load an image.
+- Immediate client-side simulation in-browser.
+- Immediately understandable, demo-friendly output.
+- Lightweight export and sharing workflow to support hackathon judging videos.
+
+## Chosen tech stack
+- **Frontend**: HTML5, CSS3, Vanilla JavaScript (ES modules)
+- **Image processing**: Canvas API
+- **Accessibility logic**: WCAG contrast ratio math (relative luminance + ratio calculation) implemented in JS
+- **Testing**: Node.js built-in `node --test` for pure utility functions
+- **Hosting**: GitHub Pages from `/docs` directory with relative asset paths
+
+## Feature list (priority order)
+### MVP (must-have)
+1. Image upload or built-in demo image loading.
+2. Render a source preview plus multiple simulation cards in-browser using Canvas.
+3. Simulate common color-vision deficiency modes, with clear labels and loading/error states.
+4. Add two low-vision modes (blur and low contrast) for visual accessibility simulation.
+5. WCAG contrast checker with explicit pass/fail result for AA/AAA thresholds.
+6. Visible error and validation messages for unsupported files, oversized images, and invalid colors.
+
+### High-priority enhancements
+7. Palette suggestion panel to propose accessible replacement color pairs.
+8. One-click copy of suggested palette values and re-run check.
+
+### Nice-to-have
+9. Instructional demo script links and screenshot checklist for Devpost submission.
+10. Lightweight export controls for generated results (downloadable previews).
+
+## Architecture
+### File layout
+- `index.html` / `style.css` / `app.js` are deployed in `docs/` for GitHub Pages.
+- `docs/js/vision-core.js` contains testable pure functions:
+  - color transform matrices
+  - contrast math
+  - palette suggestions
+- `app.js` handles UI orchestration, file loading, canvas rendering, and events.
+- `tests/vision-core.test.mjs` validates core logic in Node without a browser.
+- `VIDEO_SCRIPT.md` documents the 1–3 minute demo narrative required in submission.
+
+### Runtime flow
+1. User selects or generates an image.
+2. App validates input and draws a scaled source image onto an internal render surface.
+3. For each mode:
+   - apply matrix transforms in JS (CVD modes), or
+   - apply Canvas filters (low-vision modes),
+   - write output into mode-specific preview canvases.
+4. WCAG panel parses color inputs, computes contrast ratios, and renders recommendations.
+
+## Static deployment contract
+- Output must live under `docs/` and load correctly under a subpath using relative paths (e.g. `./app.js`, `./style.css`).
+- All logic is client-only; no credentials, secrets, or paid APIs.
+- Works offline after page load and never uploads images to a server.

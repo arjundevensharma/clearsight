@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ClearSight | Accessibility Vision Simulator</title>
+    <meta
+      name="description"
+      content="Client-side color vision and low-vision simulator with contrast checker."
+    />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header class="hero">
+        <p class="kicker">Global Tech Innovation Challenge</p>
+        <h1>ClearSight</h1>
+        <p>
+          See your UI through the eyes of users with color vision deficiency and low vision.
+          All processing is local; no image leaves your browser.
+        </p>
+      </header>
+
+      <section class="card controls" aria-labelledby="source-title">
+        <h2 id="source-title">1) Source image</h2>
+        <p id="message" class="message" role="status" aria-live="polite"></p>
+        <label class="dropzone">
+          <input id="imageInput" type="file" accept="image/*" />
+          <span>Upload screenshot/image</span>
+        </label>
+        <div class="button-row">
+          <button id="demoUi" type="button">Load demo UI</button>
+          <button id="demoDashboard" type="button">Load demo dashboard</button>
+          <button id="processBtn" type="button">Render simulations</button>
+        </div>
+        <p id="exportNote" class="muted"></p>
+      </section>
+
+      <section class="card" aria-labelledby="source-preview-title">
+        <h2 id="source-preview-title">2) Source preview</h2>
+        <figure class="canvas-wrap">
+          <canvas id="sourceCanvas" class="source-canvas" width="680" height="382" aria-label="Source image preview"></canvas>
+          <figcaption id="sourceInfo" class="muted">No image loaded</figcaption>
+        </figure>
+      </section>
+
+      <section class="card" aria-labelledby="sim-title">
+        <h2 id="sim-title">3) Accessibility simulations</h2>
+        <div id="simGrid" class="sim-grid" aria-live="polite"></div>
+      </section>
+
+      <section class="card" aria-labelledby="contrast-title">
+        <h2 id="contrast-title">4) WCAG contrast checker</h2>
+        <div class="contrast-form">
+          <div class="color-control">
+            <label for="contrastText">Text color</label>
+            <div class="input-row">
+              <input id="contrastText" type="color" value="#0F172A" />
+              <input id="contrastTextHex" type="text" value="#0F172A" maxlength="7" />
+            </div>
+          </div>
+          <div class="color-control">
+            <label for="contrastBg">Background color</label>
+            <div class="input-row">
+              <input id="contrastBg" type="color" value="#FFFFFF" />
+              <input id="contrastBgHex" type="text" value="#FFFFFF" maxlength="7" />
+            </div>
+          </div>
+        </div>
+        <div class="button-row">
+          <button id="contrastBtn" type="button">Check contrast</button>
+          <button id="suggestBtn" type="button">Suggest accessible palette</button>
+        </div>
+        <div id="contrastOut" class="contrast-output" aria-live="polite"></div>
+        <div id="suggestions" class="suggestions"></div>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
