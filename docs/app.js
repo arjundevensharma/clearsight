@@ -21,6 +21,10 @@ const IMPACT_LEVEL = {
   medium: 10,
 };
 const COMPARE_DEFAULT_PERCENT = 50;
+const CONTACT_SHEET_MAX_TILE_WIDTH = 420;
+const CONTACT_SHEET_COLUMNS = 3;
+const CONTACT_SHEET_GUTTER = 20;
+const CONTACT_SHEET_LABEL_HEIGHT = 28;
 
 const state = {
   sourceImage: null,
@@ -57,6 +61,7 @@ const dom = {
   exportNote: document.getElementById('exportNote'),
   downloadSourceBtn: document.getElementById('downloadSourceBtn'),
   downloadAllBtn: document.getElementById('downloadAllBtn'),
+  downloadContactBtn: document.getElementById('downloadContactBtn'),
   message: document.getElementById('message'),
   sourceCanvas: document.getElementById('sourceCanvas'),
   sourceInfo: document.getElementById('sourceInfo'),
@@ -232,6 +237,9 @@ function setImageControlsEnabled(enabled) {
   dom.processBtn.disabled = !enabled;
   dom.downloadSourceBtn.disabled = !enabled || !state.hasRenderedSource;
   dom.downloadAllBtn.disabled = !enabled || !state.hasRenderedSource;
+  if (dom.downloadContactBtn) {
+    dom.downloadContactBtn.disabled = !enabled || !state.hasRenderedSource;
+  }
 }
 
 function setSimPlaceholderVisible(visible) {
@@ -866,6 +874,135 @@ function downloadAllPreviews() {
   }
 }
 
+function collectCompletedExportCards() {
+  const source = {
+    id: 'source',
+    label: 'Source',
+    canvas: dom.sourceCanvas,
+  };
+
+  const simulations = [...dom.simGrid.querySelectorAll('.sim-card')]
+    .map((card) => {
+      const status = card.querySelector('.sim-status');
+      const canvas = card.querySelector('.sim-canvas');
+      const modeId = card.dataset.mode;
+      if (!card.classList.contains('is-done') || !status || !canvas) {
+        return null;
+      }
+      if (!canvas.width || !canvas.height) {
+        return null;
+      }
+
+      return {
+        id: modeId,
+        label: card.querySelector('.sim-title')?.textContent || modeId,
+        canvas,
+      };
+    })
+    .filter(Boolean);
+
+  return [source, ...simulations].filter((entry) => entry.canvas?.width && entry.canvas?.height);
+}
+
+function buildContactSheet(entries) {
+  const sourceWidth = state.renderSize.width || dom.sourceCanvas.width || 1;
+  const sourceHeight = state.renderSize.height || dom.sourceCanvas.height || 1;
+  const targetTileWidth = Math.min(CONTACT_SHEET_MAX_TILE_WIDTH, sourceWidth);
+  const scale = targetTileWidth / sourceWidth;
+  const targetTileHeight = Math.max(1, Math.round(sourceHeight * scale));
+
+  const columns = Math.min(CONTACT_SHEET_COLUMNS, entries.length);
+  const rows = Math.ceil(entries.length / columns);
+  const totalWidth =
+    columns * targetTileWidth + (columns + 1) * CONTACT_SHEET_GUTTER;
+  const headerHeight = 88;
+  const totalHeight =
+    headerHeight +
+    rows * (targetTileHeight + CONTACT_SHEET_LABEL_HEIGHT + CONTACT_SHEET_GUTTER) +
+    rows * CONTACT_SHEET_GUTTER;
+
+  const contactSheet = document.createElement('canvas');
+  contactSheet.width = totalWidth;
+  contactSheet.height = totalHeight;
+  const sheetCtx = contactSheet.getContext('2d', { willReadFrequently: true });
+  sheetCtx.fillStyle = '#ffffff';
+  sheetCtx.fillRect(0, 0, totalWidth, totalHeight);
+
+  sheetCtx.fillStyle = '#0f172a';
+  sheetCtx.font = '600 18px Poppins, "Segoe UI", system-ui, -apple-system, sans-serif';
+  sheetCtx.fillText('ClearSight Accessibility Simulations', CONTACT_SHEET_GUTTER, 34);
+  const sourceLabel =
+    state.sourceName && state.sourceName.trim() ? state.sourceName : 'source-image';
+  sheetCtx.font = '500 14px Poppins, "Segoe UI", system-ui, -apple-system, sans-serif';
+  sheetCtx.fillStyle = '#475569';
+  sheetCtx.fillText(`Source: ${sourceLabel} • ${sourceWidth}x${sourceHeight}`, CONTACT_SHEET_GUTTER, 58);
+
+  entries.forEach((entry, idx) => {
+    const col = idx % columns;
+    const row = Math.floor(idx / columns);
+    const x = CONTACT_SHEET_GUTTER + col * (targetTileWidth + CONTACT_SHEET_GUTTER);
+    const y =
+      headerHeight +
+      row * (targetTileHeight + CONTACT_SHEET_LABEL_HEIGHT + CONTACT_SHEET_GUTTER) +
+      CONTACT_SHEET_GUTTER;
+
+    sheetCtx.fillStyle = '#f8fafc';
+    sheetCtx.strokeStyle = '#cbd5e1';
+    sheetCtx.lineWidth = 1;
+    sheetCtx.fillRect(
+      x,
+      y,
+      targetTileWidth,
+      targetTileHeight + CONTACT_SHEET_LABEL_HEIGHT,
+    );
+    sheetCtx.strokeRect(
+      x,
+      y,
+      targetTileWidth,
+      targetTileHeight + CONTACT_SHEET_LABEL_HEIGHT,
+    );
+
+    sheetCtx.drawImage(entry.canvas, x, y, targetTileWidth, targetTileHeight);
+
+    const labelY = y + targetTileHeight + 18;
+    sheetCtx.fillStyle = '#334155';
+    sheetCtx.font = '600 12px Poppins, "Segoe UI", system-ui, -apple-system, sans-serif';
+    sheetCtx.fillText(
+      entry.label,
+      x + 8,
+      labelY,
+      targetTileWidth - 12,
+    );
+  });
+
+  return contactSheet;
+}
+
+function downloadContactSheet() {
+  if (state.isRendering) {
+    setMessage('Please wait for rendering to finish before generating contact sheet.', 'info');
+    return;
+  }
+  if (!state.hasRenderedSource) {
+    setMessage('Render the source and simulations first before exporting.', 'error');
+    return;
+  }
+
+  const entries = collectCompletedExportCards();
+  if (entries.length < 2) {
+    setMessage('Render at least one simulation before creating a contact sheet.', 'error');
+    return;
+  }
+
+  try {
+    const contactSheet = buildContactSheet(entries);
+    downloadCanvasAsImage(contactSheet, makeExportFileName('contact-sheet'));
+    setMessage(`Exported contact sheet (${entries.length} tiles).`, 'success');
+  } catch (error) {
+    setMessage(error.message, 'error');
+  }
+}
+
 function renderContrastResult() {
   clearContrastValidation();
   try {
@@ -1118,6 +1255,7 @@ function init() {
     }
   });
   dom.downloadAllBtn.addEventListener('click', downloadAllPreviews);
+  dom.downloadContactBtn?.addEventListener('click', downloadContactSheet);
   dom.contrastBtn.addEventListener('click', renderContrastResult);
   dom.suggestBtn.addEventListener('click', renderSuggestions);
   dom.copyDemoScriptBtn?.addEventListener('click', () => {
