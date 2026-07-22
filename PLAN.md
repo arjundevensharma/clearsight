@@ -44,6 +44,7 @@ The project is intentionally scoped for a one-day build:
 - [x] Add one-click accessibility audit report export (JSON) covering ranked simulation impact and current contrast checks.
 - [x] Add global simulation blend control to synchronize source-vs-sim overlay across all cards for faster review.
 - [x] Add workspace reset control to clear source, simulations, and contrast state between demo iterations.
+- [x] Add single-click submission package export that downloads rendered visuals, ranked contact sheet, and accessibility report together.
 
 ## Architecture
 ### File layout

@@ -66,6 +66,7 @@ const dom = {
   downloadAllBtn: document.getElementById('downloadAllBtn'),
   downloadContactBtn: document.getElementById('downloadContactBtn'),
   downloadReportBtn: document.getElementById('downloadReportBtn'),
+  downloadPackageBtn: document.getElementById('downloadPackageBtn'),
   message: document.getElementById('message'),
   sourceCanvas: document.getElementById('sourceCanvas'),
   sourceInfo: document.getElementById('sourceInfo'),
@@ -248,6 +249,9 @@ function setImageControlsEnabled(enabled) {
   }
   if (dom.downloadReportBtn) {
     dom.downloadReportBtn.disabled = !enabled || !state.hasRenderedSource;
+  }
+  if (dom.downloadPackageBtn) {
+    dom.downloadPackageBtn.disabled = !enabled || !state.hasRenderedSource;
   }
   if (dom.globalCompareSlider) {
     dom.globalCompareSlider.disabled = !enabled;
@@ -462,8 +466,9 @@ function showSourceMeta(fileName, width, height) {
   dom.sourceInfo.textContent = `${fileName} • ${width}×${height}px`;
 }
 
-function makeExportFileName(mode = 'source') {
-  return `${getSafeFileName(state.sourceName || 'clearsight-source')}-${mode}.png`;
+function makeExportFileName(mode = 'source', extension = 'png') {
+  const safeMode = extension === 'json' ? 'json' : 'png';
+  return `${getSafeFileName(state.sourceName || 'clearsight-source')}-${mode}.${safeMode}`;
 }
 
 function downloadCanvasAsImage(canvas, filename) {
@@ -1209,6 +1214,48 @@ function downloadContactSheet() {
   }
 }
 
+function downloadSubmissionPackage() {
+  if (state.isRendering) {
+    setMessage('Please wait for rendering to finish before generating the submission package.', 'info');
+    return;
+  }
+  if (!state.hasRenderedSource) {
+    setMessage('Render the source and simulations first before downloading a package.', 'error');
+    return;
+  }
+
+  const entries = collectCompletedExportCards();
+  const simulationEntries = entries.filter((entry) => entry.id !== 'source');
+
+  if (simulationEntries.length < 1) {
+    setMessage('Render at least one simulation before creating a submission package.', 'error');
+    return;
+  }
+
+  try {
+    entries.forEach((entry) => {
+      downloadCanvasAsImage(entry.canvas, `${getSafeFileName(state.sourceName || 'clearsight-source')}-${entry.id}.png`);
+    });
+
+    const contactSheet = buildContactSheet(entries);
+    downloadCanvasAsImage(contactSheet, makeExportFileName('submission-contact-sheet'));
+
+    const report = buildAccessibilityReport();
+    downloadTextFile(
+      JSON.stringify(report, null, 2),
+      makeExportFileName('submission-report', 'json'),
+      'application/json;charset=utf-8',
+    );
+
+    setMessage(
+      `Submission package exported: ${entries.length} visuals, contact sheet, and JSON report.`,
+      'success',
+    );
+  } catch (error) {
+    setMessage(error.message, 'error');
+  }
+}
+
 function buildAccessibilityReport() {
   const simulationImpacts = [...state.modeImpacts]
     .map((entry) => ({
@@ -1288,7 +1335,7 @@ function downloadAccessibilityReport() {
   }
 
   const report = buildAccessibilityReport();
-  const filename = `${makeExportFileName('accessibility-report')}.json`;
+  const filename = makeExportFileName('accessibility-report', 'json');
   downloadTextFile(
     JSON.stringify(report, null, 2),
     filename,
@@ -1562,6 +1609,7 @@ function init() {
   dom.downloadAllBtn.addEventListener('click', downloadAllPreviews);
   dom.downloadContactBtn?.addEventListener('click', downloadContactSheet);
   dom.downloadReportBtn?.addEventListener('click', downloadAccessibilityReport);
+  dom.downloadPackageBtn?.addEventListener('click', downloadSubmissionPackage);
   if (dom.globalCompareSlider) {
     syncGlobalCompare(dom.globalCompareSlider.value || COMPARE_DEFAULT_PERCENT);
     dom.globalCompareSlider.addEventListener('input', (event) => {
