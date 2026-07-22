@@ -93,6 +93,20 @@
         <div id="impactSummary" class="impact-summary muted" role="status" aria-live="polite">
           Run simulations to reveal visual-impact ranking.
         </div>
+        <div id="renderProgress" class="render-progress" hidden aria-live="polite">
+          <p id="renderProgressLabel" class="render-progress-label"></p>
+          <div
+            id="renderProgressBar"
+            class="render-progress-bar"
+            role="progressbar"
+            aria-label="Simulation render progress"
+            aria-valuemin="0"
+            aria-valuemax="0"
+            aria-valuenow="0"
+          >
+            <div id="renderProgressFill" class="render-progress-fill"></div>
+          </div>
+        </div>
         <div id="simGrid" class="sim-grid" aria-live="polite"></div>
       </section>
 

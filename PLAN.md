@@ -28,12 +28,13 @@ The project is intentionally scoped for a one-day build:
 ### High-priority enhancements
 7. Palette suggestion panel to propose accessible replacement color pairs.
 8. One-click copy of suggested palette values and re-run check.
+9. Add a real-time render progress rail with per-mode completion feedback.
 
 ### Nice-to-have
-9. Instructional demo script links and screenshot checklist for Devpost submission.
-10. Lightweight export controls for generated results (downloadable previews).
-11. Add source-image color picker controls for direct contrast text/background sampling.
-12. Add discoverable keyboard shortcut help panel with `?`/`H` toggle and shortcut legend.
+10. Instructional demo script links and screenshot checklist for Devpost submission.
+11. Lightweight export controls for generated results (downloadable previews).
+12. Add source-image color picker controls for direct contrast text/background sampling.
+13. Add discoverable keyboard shortcut help panel with `?`/`H` toggle and shortcut legend.
 
 ## Session checkpoint (2026-07-22)
 - [x] Add simulation impact ranking to make high-risk vision modes immediately visible after render.
@@ -62,6 +63,7 @@ The project is intentionally scoped for a one-day build:
 - [x] Expose the existing top-impact preview action and keyboard-shortcut help directly in the simulator UI (details panel + top-impact inspect button).
 - [x] Persist demo settings across reloads (global comparison, simulation intensity, contrast defaults, large-text mode) for frictionless repeat demos.
 - [x] Fix runtime blockers from a syntax regression by removing an extra closing brace in `docs/app.js` and `docs/current/app.js` so the app parses and runs reliably.
+- [x] Add a real-time simulation render progress rail with per-mode completion feedback.
 
 ## Architecture
 ### File layout

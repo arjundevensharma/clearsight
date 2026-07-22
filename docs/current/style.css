@@ -334,6 +334,32 @@ kbd {
   gap: 0.5rem;
 }
 
+.render-progress {
+  margin-top: 0.55rem;
+}
+
+.render-progress-label {
+  margin: 0 0 0.35rem;
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+}
+
+.render-progress-bar {
+  height: 8px;
+  border: 1px solid var(--ring);
+  border-radius: 999px;
+  background: #f1f5f9;
+  overflow: hidden;
+}
+
+.render-progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 84%, var(--bad)), var(--accent));
+  transition: width 160ms ease;
+}
+
 .impact-pill {
   display: inline-flex;
   align-items: center;

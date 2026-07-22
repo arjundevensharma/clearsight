@@ -35,6 +35,7 @@ const COLOR_PICKER_TARGET_TEXT = 'text';
 const COLOR_PICKER_TARGET_BACKGROUND = 'background';
 const COLOR_PICKER_SOURCE_CLASS = 'is-picking-color';
 const SETTINGS_STORAGE_KEY = 'clearsight-settings-v1';
+const RENDER_PROGRESS_TIMEOUT_MS = 900;
 
 const state = {
   sourceImage: null,
@@ -55,6 +56,7 @@ const state = {
 
 let simulationSeverityRerenderTimer = null;
 let modalReturnFocusElement = null;
+let renderProgressHideTimer = null;
 
 function getStoredSettings() {
   try {
@@ -202,6 +204,10 @@ const dom = {
   previewModalImage: document.getElementById('previewModalImage'),
   previewModalDownloadBtn: document.getElementById('previewModalDownloadBtn'),
   previewModalCloseBtn: document.getElementById('previewModalCloseBtn'),
+  renderProgress: document.getElementById('renderProgress'),
+  renderProgressBar: document.getElementById('renderProgressBar'),
+  renderProgressFill: document.getElementById('renderProgressFill'),
+  renderProgressLabel: document.getElementById('renderProgressLabel'),
   shortcutHelp: document.getElementById('shortcutHelp'),
 };
 
@@ -342,6 +348,48 @@ function renderAccessibilitySummary() {
 function setMessage(text, type = 'info') {
   dom.message.textContent = text;
   dom.message.dataset.type = text ? type : '';
+}
+
+function setRenderProgress(current = 0, total = 0, label = '') {
+  if (!dom.renderProgress || !dom.renderProgressBar || !dom.renderProgressFill || !dom.renderProgressLabel) {
+    return;
+  }
+
+  if (renderProgressHideTimer) {
+    clearTimeout(renderProgressHideTimer);
+    renderProgressHideTimer = null;
+  }
+
+  const safeTotal = Number.isFinite(total) ? Math.floor(total) : 0;
+  const safeCurrent = Number.isFinite(current) ? Math.floor(current) : 0;
+
+  if (!safeTotal || safeTotal <= 0) {
+    dom.renderProgress.hidden = true;
+    dom.renderProgressLabel.textContent = '';
+    dom.renderProgressFill.style.width = '0%';
+    dom.renderProgressBar.setAttribute('aria-valuemin', '0');
+    dom.renderProgressBar.setAttribute('aria-valuemax', '0');
+    dom.renderProgressBar.setAttribute('aria-valuenow', '0');
+    return;
+  }
+
+  const clampedCurrent = Math.max(0, Math.min(safeCurrent, safeTotal));
+  const percent = Math.round((clampedCurrent / safeTotal) * 100);
+
+  dom.renderProgress.hidden = false;
+  dom.renderProgressLabel.textContent = `${label} (${clampedCurrent}/${safeTotal})`;
+  dom.renderProgressFill.style.width = `${percent}%`;
+  dom.renderProgressBar.setAttribute('aria-valuemin', '0');
+  dom.renderProgressBar.setAttribute('aria-valuemax', String(safeTotal));
+  dom.renderProgressBar.setAttribute('aria-valuenow', String(clampedCurrent));
+
+  if (clampedCurrent >= safeTotal) {
+    renderProgressHideTimer = setTimeout(() => {
+      if (!state.isRendering) {
+        setRenderProgress(0, 0);
+      }
+    }, RENDER_PROGRESS_TIMEOUT_MS);
+  }
 }
 
 function clearMessage() {
@@ -832,6 +880,7 @@ function clearWorkspace({ notify = true } = {}) {
   dom.sourceInfo.textContent = 'No image loaded';
   dom.exportNote.textContent = '';
   renderAccessibilitySummary();
+  setRenderProgress(0, 0);
 
   renderModeCards();
   applyTopImpactFilter();
@@ -1717,10 +1766,12 @@ async function renderAll() {
   state.hasRenderedSource = false;
   state.modeImpacts = [];
   state.showTopImpactOnly = false;
+  const totalModes = allModes.length;
   clearColorPicker();
   markSimulationCardsPending();
   applyTopImpactFilter();
   setSimPlaceholderVisible(false);
+  setRenderProgress(0, totalModes, 'Starting simulation render');
 
   setControlState(true);
   setImageControlsEnabled(false);
@@ -1743,13 +1794,16 @@ async function renderAll() {
     state.sourceImageData = sourceCtx.getImageData(0, 0, sourceSize.width, sourceSize.height);
     state.hasRenderedSource = true;
     showSourceMeta(state.sourceName, sourceSize.width, sourceSize.height);
-    for (const mode of allModes) {
+    for (let modeIndex = 0; modeIndex < allModes.length; modeIndex += 1) {
+      const mode = allModes[modeIndex];
+      setRenderProgress(modeIndex + 1, totalModes, `Rendering ${mode.label}`);
       // eslint-disable-next-line no-await-in-loop
       const result = await renderMode(mode, sourceSize);
       if (result) {
         state.modeImpacts.push(result);
       }
     }
+    setRenderProgress(totalModes, totalModes, 'Render complete');
 
     setImageControlsEnabled(true);
     dom.processBtn.textContent = 'Render simulations';
@@ -1774,6 +1828,7 @@ async function renderAll() {
     renderAccessibilitySummary();
   } catch (error) {
     dom.processBtn.textContent = 'Render simulations';
+    setRenderProgress(0, 0);
     setMessage(error.message || 'Failed to complete rendering.', 'error');
   } finally {
     state.isRendering = false;
@@ -1789,6 +1844,9 @@ async function renderAll() {
     setSimPlaceholderVisible(!state.hasRenderedSource);
     if (shouldRerenderSeverity) {
       queueSimulationSeverityRerender();
+    }
+    if (!state.hasRenderedSource) {
+      setRenderProgress(0, 0);
     }
   }
 }
