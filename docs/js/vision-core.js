@@ -132,6 +132,26 @@ export function getSubmissionChecklistText() {
   return SUBMISSION_CHECKLIST_LINES.join('\n');
 }
 
+function assertFiniteRgbChannel(value, label) {
+  if (!Number.isFinite(value)) {
+    throw new Error(`${label} must be a finite number.`);
+  }
+
+  if (value < 0 || value > 255) {
+    throw new Error(`${label} channel value must be between 0 and 255.`);
+  }
+}
+
+function assertRgbObject(color, label = 'Color') {
+  if (!color || typeof color !== 'object') {
+    throw new Error(`${label} must be an object with numeric r, g, b fields.`);
+  }
+
+  assertFiniteRgbChannel(color.r, `${label}.r`);
+  assertFiniteRgbChannel(color.g, `${label}.g`);
+  assertFiniteRgbChannel(color.b, `${label}.b`);
+}
+
 function requireFinitePositiveNumber(value, label, min = Number.NEGATIVE_INFINITY) {
   if (!Number.isFinite(value)) {
     throw new Error(`${label} must be a finite number.`);
@@ -145,8 +165,17 @@ export function transformImageDataWithMatrix(imageData, matrix) {
   if (!imageData || !imageData.data || !matrix || !Array.isArray(matrix) || matrix.length !== 3) {
     throw new Error('Invalid image data or matrix provided for color transformation.');
   }
+  if (!imageData.width || !imageData.height || imageData.width <= 0 || imageData.height <= 0) {
+    throw new Error('Invalid image data dimensions for color transformation.');
+  }
   if (!Array.isArray(matrix[0]) || !Array.isArray(matrix[1]) || !Array.isArray(matrix[2])) {
     throw new Error('Invalid image data or matrix provided for color transformation.');
+  }
+  if (imageData.data.length < imageData.width * imageData.height * 4) {
+    throw new Error('Image data length does not match expected dimensions.');
+  }
+  if (imageData.data.length % 4 !== 0) {
+    throw new Error('Invalid image data for color transformation.');
   }
   if (matrix.some((row) => row.length !== 3 || row.some((value) => typeof value !== 'number' || !Number.isFinite(value)))) {
     throw new Error('Invalid image data or matrix provided for color transformation.');
@@ -212,6 +241,7 @@ function linearize(channel) {
 }
 
 export function relativeLuminance({ r, g, b }) {
+  assertRgbObject({ r, g, b }, 'RGB color');
   return 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b);
 }
 

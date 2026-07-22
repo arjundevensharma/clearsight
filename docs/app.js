@@ -19,6 +19,7 @@ const state = {
   sourceImage: null,
   sourceName: '',
   renderSize: { width: 0, height: 0 },
+  isRendering: false,
 };
 
 const cvdModes = CVD_MODES.filter((mode) => mode.id !== 'normal');
@@ -137,6 +138,21 @@ function setImageControlsEnabled(enabled) {
   dom.processBtn.disabled = !enabled;
   dom.downloadSourceBtn.disabled = !enabled;
   dom.downloadAllBtn.disabled = !enabled;
+}
+
+function markSimulationCardsPending() {
+  const cards = dom.simGrid.querySelectorAll('.sim-card');
+  cards.forEach((card) => {
+    const status = card.querySelector('.sim-status');
+    const exportBtn = card.querySelector('.tiny-btn');
+    if (status) {
+      status.textContent = 'Pending';
+      status.className = 'sim-status';
+    }
+    if (exportBtn) {
+      exportBtn.disabled = true;
+    }
+  });
 }
 
 function setControlState(enabled) {
@@ -509,6 +525,13 @@ async function renderAll() {
     setMessage('Upload or load a sample image first.', 'error');
     return;
   }
+  if (state.isRendering) {
+    setMessage('Rendering is already in progress.', 'info');
+    return;
+  }
+
+  state.isRendering = true;
+  markSimulationCardsPending();
 
   setControlState(true);
   setImageControlsEnabled(false);
@@ -542,11 +565,17 @@ async function renderAll() {
     dom.processBtn.textContent = 'Render simulations';
     setMessage(error.message || 'Failed to complete rendering.', 'error');
   } finally {
+    state.isRendering = false;
     setImageControlsEnabled(Boolean(state.sourceImage));
   }
 }
 
 function downloadAllPreviews() {
+  if (state.isRendering) {
+    setMessage('Please wait for rendering to finish before downloading.', 'info');
+    return;
+  }
+
   const sourceFileName = makeExportFileName('source');
 
   try {
@@ -713,6 +742,9 @@ function readImageAndRender(file) {
     .then((image) => {
       state.sourceImage = image;
       state.sourceName = file.name || 'uploaded-image';
+      state.renderSize = { width: 0, height: 0 };
+      markSimulationCardsPending();
+      dom.exportNote.textContent = '';
       clearContrastValidation();
       return renderAll();
     })

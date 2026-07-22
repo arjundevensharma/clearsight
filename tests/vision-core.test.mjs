@@ -4,6 +4,7 @@ import {
   parseHexColor,
   rgbToHex,
   contrastRatio,
+  relativeLuminance,
   getDemoScriptText,
   getSubmissionChecklistText,
   suggestAccessiblePairs,
@@ -32,10 +33,21 @@ test('contrast for black and white is maximum of visible combinations', () => {
   assert.ok(ratio > 20);
 });
 
+test('relativeLuminance validates channel ranges', () => {
+  assert.throws(() => relativeLuminance({ r: -1, g: 0, b: 0 }), /between 0 and 255/);
+  assert.throws(() => relativeLuminance({ r: 0, g: 0, b: 300 }), /between 0 and 255/);
+  assert.throws(() => relativeLuminance({ r: '0', g: 0, b: 0 }), /finite number/);
+});
+
 test('equal colors return contrast 1', () => {
   const color = parseHexColor('#445566');
   const ratio = contrastRatio(color, color);
   assert.equal(ratio.toFixed(3), '1.000');
+});
+
+test('contrastRatio validates input color objects', () => {
+  assert.throws(() => contrastRatio(parseHexColor('#000000'), null), /requires two RGB objects/);
+  assert.throws(() => contrastRatio(null, parseHexColor('#fff')), /requires two RGB objects/);
 });
 
 test('evaluateContrast exposes AA and AAA states', () => {
@@ -80,6 +92,19 @@ test('transformImageDataWithMatrix throws for invalid matrix', () => {
   const source = { data: new Uint8ClampedArray([0, 0, 0, 255]), width: 1, height: 1 };
   assert.throws(() => transformImageDataWithMatrix(source, [[1, 0], [0, 1], [0, 0]]), /Invalid image data or matrix/i);
   assert.throws(() => transformImageDataWithMatrix(source, [[1, 0, 0], [0, 1, 0], ['a', 0, 0]]), /Invalid image data or matrix/i);
+});
+
+test('transformImageDataWithMatrix validates image dimensions and raw data', () => {
+  const tiny = { data: new Uint8ClampedArray([0, 0, 0]), width: 1, height: 1 };
+  assert.throws(() => transformImageDataWithMatrix(tiny, CVD_MODES[0].matrix), /Image data length does not match expected dimensions/);
+  assert.throws(
+    () =>
+      transformImageDataWithMatrix(
+        { data: new Uint8ClampedArray([0, 0, 0, 255]), width: 0, height: 0 },
+        CVD_MODES[0].matrix,
+      ),
+    /Invalid image data dimensions/i,
+  );
 });
 
 test('transformImageDataWithMatrix transforms image data in place', () => {
