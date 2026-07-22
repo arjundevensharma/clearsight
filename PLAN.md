@@ -55,6 +55,7 @@ The project is intentionally scoped for a one-day build:
 - [x] Make WCAG contrast checker context-aware with large-text AA threshold support (3:1) and align suggestions/reporting output.
 - [x] Add source-image color picker controls for direct contrast text/background sampling from the rendered source.
 - [x] Add quick-access top-impact simulations filter toggle for rapid high-risk review during demos.
+- [x] Add one-click highest-impact preview action (button + keyboard shortcut) for immediate demo triage.
 
 ## Architecture
 ### File layout

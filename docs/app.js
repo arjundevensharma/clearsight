@@ -113,6 +113,7 @@ const dom = {
   simulationSeveritySlider: document.getElementById('simulationSeveritySlider'),
   simulationSeverityValue: document.getElementById('simulationSeverityValue'),
   topImpactFilterBtn: document.getElementById('topImpactFilterBtn'),
+  openTopImpactBtn: document.getElementById('openTopImpactBtn'),
   previewModal: document.getElementById('previewModal'),
   previewModalBackdrop: document.getElementById('previewModalBackdrop'),
   previewModalContent: document.querySelector('.preview-modal-content'),
@@ -499,6 +500,7 @@ function runKeyboardShortcut(event) {
     d: () => runIfAvailable(dom.demoDashboard, 'Load demo dashboard', () => dom.demoDashboard.click()),
     c: () => runIfAvailable(dom.contrastBtn, 'Contrast check', () => dom.contrastBtn.click()),
     a: () => runIfAvailable(dom.suggestBtn, 'Palette suggestion', () => dom.suggestBtn.click()),
+    p: () => openTopImpactPreview(),
     t: () => startColorPicker(COLOR_PICKER_TARGET_TEXT),
     b: () => startColorPicker(COLOR_PICKER_TARGET_BACKGROUND),
   };
@@ -662,6 +664,9 @@ function setImageControlsEnabled(enabled) {
   if (dom.topImpactFilterBtn) {
     dom.topImpactFilterBtn.disabled = !enabled || !state.sourceImage;
   }
+  if (dom.openTopImpactBtn) {
+    dom.openTopImpactBtn.disabled = !enabled || !state.hasRenderedSource;
+  }
   if (dom.clearWorkspaceBtn) {
     dom.clearWorkspaceBtn.disabled = !enabled || !state.sourceImage;
   }
@@ -716,6 +721,7 @@ function clearWorkspace({ notify = true } = {}) {
   clearContrastValidation();
   syncGlobalCompare(COMPARE_DEFAULT_PERCENT);
   setImageControlsEnabled(false);
+  updateTopImpactPreviewButton();
   setControlState(true);
 
   if (notify) {
@@ -1003,6 +1009,27 @@ function applyTopImpactFilter({ announce = false } = {}) {
   }
 }
 
+function updateTopImpactPreviewButton() {
+  if (!dom.openTopImpactBtn) {
+    return;
+  }
+
+  const topImpact = getTopImpactEntry();
+  if (!topImpact || !state.hasRenderedSource) {
+    dom.openTopImpactBtn.disabled = true;
+    dom.openTopImpactBtn.textContent = 'Inspect highest-impact simulation';
+    dom.openTopImpactBtn.setAttribute('aria-label', 'Inspect highest-impact simulation');
+    return;
+  }
+
+  dom.openTopImpactBtn.disabled = false;
+  dom.openTopImpactBtn.textContent = `Inspect ${topImpact.label}`;
+  dom.openTopImpactBtn.setAttribute(
+    'aria-label',
+    `Inspect highest-impact simulation: ${topImpact.label}`,
+  );
+}
+
 function toggleTopImpactFilter() {
   if (!state.hasRenderedSource || !state.modeImpacts.length) {
     setMessage('Render simulations first before filtering by impact.', 'info');
@@ -1016,6 +1043,32 @@ function toggleTopImpactFilter() {
 
   state.showTopImpactOnly = !state.showTopImpactOnly;
   applyTopImpactFilter({ announce: true });
+}
+
+function openTopImpactPreview() {
+  const topImpact = getTopImpactEntry();
+  if (!topImpact) {
+    setMessage('Render simulations first to generate a top-impact ranking.', 'info');
+    return;
+  }
+
+  const card = dom.simGrid.querySelector(`[data-mode="${topImpact.modeId}"]`);
+  if (!card) {
+    setMessage('Highest-impact simulation card is not available right now.', 'error');
+    return;
+  }
+
+  const canvas = card.querySelector('.sim-canvas');
+  if (!canvas || !canvas.width || !canvas.height) {
+    setMessage('Highest-impact simulation is not ready yet. Render simulations first.', 'info');
+    return;
+  }
+
+  openPreviewModal({
+    modeId: topImpact.modeId,
+    label: topImpact.label,
+    canvas,
+  });
 }
 
 function setControlState(enabled) {
@@ -1580,6 +1633,7 @@ async function renderAll() {
     reorderSimulationCardsByImpact(state.modeImpacts);
     setImpactSummary(sortedByImpact);
     applyTopImpactFilter();
+    updateTopImpactPreviewButton();
 
   const topImpact = sortedByImpact[0];
     if (topImpact) {
@@ -1605,6 +1659,7 @@ async function renderAll() {
     if (!state.modeImpacts.length) {
       setImpactSummary([]);
     }
+    updateTopImpactPreviewButton();
     setSimPlaceholderVisible(!state.hasRenderedSource);
     if (shouldRerenderSeverity) {
       queueSimulationSeverityRerender();
@@ -2294,6 +2349,7 @@ function init() {
   dom.downloadTopImpactBtn?.addEventListener('click', downloadTopImpactPack);
   dom.downloadReportBtn?.addEventListener('click', downloadAccessibilityReport);
   dom.downloadPackageBtn?.addEventListener('click', downloadSubmissionPackage);
+  dom.openTopImpactBtn?.addEventListener('click', openTopImpactPreview);
   if (dom.globalCompareSlider) {
     syncGlobalCompare(dom.globalCompareSlider.value || COMPARE_DEFAULT_PERCENT);
     dom.globalCompareSlider.addEventListener('input', (event) => {
