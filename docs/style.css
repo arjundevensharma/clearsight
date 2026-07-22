@@ -581,6 +581,50 @@ input[type='text'] {
   color: var(--ink);
 }
 
+.accessibility-summary {
+  margin-top: 0.65rem;
+  border-radius: 10px;
+  border: 1px solid var(--ring);
+  padding: 0.7rem;
+  background: #f8fafc;
+}
+
+.accessibility-summary .summary-title {
+  margin: 0 0 0.35rem;
+  font-weight: 700;
+}
+
+.accessibility-summary .summary-list {
+  margin: 0;
+  padding-left: 1.05rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.accessibility-summary .summary-list li {
+  line-height: 1.35;
+}
+
+.accessibility-summary.risk-high {
+  border-color: color-mix(in srgb, var(--bad) 40%, var(--ring));
+  background: color-mix(in srgb, var(--bad) 8%, white);
+}
+
+.accessibility-summary.risk-medium {
+  border-color: color-mix(in srgb, var(--warn) 46%, var(--ring));
+  background: color-mix(in srgb, var(--warn) 10%, white);
+}
+
+.accessibility-summary.risk-low {
+  border-color: color-mix(in srgb, var(--good) 42%, var(--ring));
+  background: color-mix(in srgb, var(--good) 8%, white);
+}
+
+.accessibility-summary.risk-neutral {
+  border-color: var(--ring);
+  background: #f8fafc;
+}
+
 .suggestions {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));

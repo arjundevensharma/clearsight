@@ -83,6 +83,7 @@ const dom = {
   simPlaceholder: document.getElementById('simEmptyState'),
   impactSummary: document.getElementById('impactSummary'),
   contrastValidation: document.getElementById('contrastValidation'),
+  accessibilitySummary: document.getElementById('accessibilitySummary'),
   copyDemoScriptBtn: document.getElementById('copyDemoScriptBtn'),
   copyChecklistBtn: document.getElementById('copyChecklistBtn'),
   demoCopyStatus: document.getElementById('demoCopyStatus'),
@@ -136,6 +137,90 @@ function setImpactSummary(stats = []) {
   dom.impactSummary.innerHTML = `
     <p>High-impact order: ${lead.label} leads at ${lead.impactPercent.toFixed(1)}%.</p>
     <div class="impact-pill-row">${chips}</div>
+  `;
+}
+
+function getTopImpactEntry() {
+  const withImpact = state.modeImpacts.filter((entry) => typeof entry.impactPercent === 'number');
+  if (!withImpact.length) {
+    return null;
+  }
+
+  return [...withImpact].sort((a, b) => b.impactPercent - a.impactPercent)[0];
+}
+
+function getOverallRiskLevel(impactLevel, contrastResult) {
+  if (impactLevel === 'high' || (contrastResult && !contrastResult.passesAA)) {
+    return 'high';
+  }
+
+  if (impactLevel === 'medium') {
+    return 'medium';
+  }
+
+  if (impactLevel === 'low' || (contrastResult && contrastResult.passesAA && contrastResult.passesAAA)) {
+    return 'low';
+  }
+
+  if (impactLevel) {
+    return impactLevel;
+  }
+
+  if (contrastResult) {
+    return contrastResult.passesAA ? 'low' : 'high';
+  }
+
+  return 'neutral';
+}
+
+function renderAccessibilitySummary() {
+  const summary = dom.accessibilitySummary;
+  if (!summary) {
+    return;
+  }
+
+  const topImpact = getTopImpactEntry();
+  const topImpactLevel = topImpact?.impactLevel || 'neutral';
+  const overallLevel = getOverallRiskLevel(topImpactLevel, state.lastContrastResult);
+  const levelLabel = {
+    high: 'High',
+    medium: 'Moderate',
+    low: 'Low',
+    neutral: 'Not available',
+  };
+  const bullets = [];
+
+  if (topImpact) {
+    bullets.push(
+      `Highest simulated change: <strong>${topImpact.label}</strong> (${topImpact.impactPercent.toFixed(1)}% pixel delta).`,
+    );
+    if (topImpact.impactPercent >= IMPACT_LEVEL.high) {
+      bullets.push('Prioritize this mode first in your accessibility review.');
+    }
+  } else if (state.hasRenderedSource) {
+    bullets.push('Simulations are rendered; run all renderers to compute visual impact ranking.');
+  }
+
+  if (state.lastContrastResult) {
+    bullets.push(
+      `Contrast: <strong>${state.lastContrastResult.ratio.toFixed(1)}:1</strong> (AA ${state.lastContrastResult.passesAA ? 'PASS' : 'FAIL'}, AAA ${state.lastContrastResult.passesAAA ? 'PASS' : 'FAIL'}).`,
+    );
+    if (!state.lastContrastResult.passesAA) {
+      bullets.push('Raise contrast to at least 4.5:1 to satisfy AA baseline requirements.');
+    }
+  } else {
+    bullets.push('Run the contrast checker to add WCAG validation to this snapshot.');
+  }
+
+  if (!state.sourceImage) {
+    bullets.unshift('Upload or load an image, render simulations, and run a contrast check to activate this summary.');
+  }
+
+  summary.classList.remove('risk-high', 'risk-medium', 'risk-low', 'risk-neutral');
+  summary.classList.add(`risk-${overallLevel}`);
+  summary.innerHTML = `
+    <p class="summary-title">Accessibility health: <strong>${levelLabel[overallLevel]}</strong></p>
+    <ul class="summary-list">${bullets.map((bullet) => `<li>${bullet}</li>`).join('')}</ul>
   `;
 }
 
@@ -289,6 +374,7 @@ function clearWorkspace({ notify = true } = {}) {
   }
   dom.sourceInfo.textContent = 'No image loaded';
   dom.exportNote.textContent = '';
+  renderAccessibilitySummary();
 
   renderModeCards();
   setSimPlaceholderVisible(true);
@@ -977,7 +1063,7 @@ async function renderAll() {
     reorderSimulationCardsByImpact(state.modeImpacts);
     setImpactSummary(sortedByImpact);
 
-    const topImpact = sortedByImpact[0];
+  const topImpact = sortedByImpact[0];
     if (topImpact) {
       setMessage(
         `All simulations rendered. Highest impact: ${topImpact.label} (${topImpact.impactPercent.toFixed(1)}%).`,
@@ -987,6 +1073,7 @@ async function renderAll() {
       setMessage('All simulations rendered.', 'success');
     }
     dom.exportNote.textContent = 'Tip: download previews for quick submission screenshots.';
+    renderAccessibilitySummary();
   } catch (error) {
     dom.processBtn.textContent = 'Render simulations';
     setMessage(error.message || 'Failed to complete rendering.', 'error');
@@ -1351,6 +1438,7 @@ function renderContrastResult() {
     const result = evaluateContrast(text, background);
     const ratio = result.ratio.toFixed(2);
     state.lastContrastResult = result;
+    renderAccessibilitySummary();
     dom.contrastOut.innerHTML = `
       <span>Contrast: <strong>${ratio}:1</strong></span>
       <span>AA: <strong>${result.passesAA ? 'PASS' : 'FAIL'}</strong></span>
@@ -1363,6 +1451,7 @@ function renderContrastResult() {
     dom.contrastOut.textContent = error.message;
     setContrastValidation(error.message);
     state.lastContrastResult = null;
+    renderAccessibilitySummary();
     setMessage(error.message, 'error');
     return null;
   }
@@ -1631,6 +1720,8 @@ function init() {
   syncHexWithPicker(dom.contrastBg, dom.contrastBgHex, 'Background');
   dom.contrastText.addEventListener('change', renderContrastResult);
   dom.contrastBg.addEventListener('change', renderContrastResult);
+
+  renderAccessibilitySummary();
 
   dom.contrastText.value = '#0f172a';
   dom.contrastBg.value = '#ffffff';
