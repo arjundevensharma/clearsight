@@ -24,9 +24,10 @@
       <section class="card controls" aria-labelledby="source-title">
         <h2 id="source-title">1) Source image</h2>
         <p id="message" class="message" role="status" aria-live="polite"></p>
-        <label class="dropzone">
+        <label id="imageDropzone" class="dropzone" for="imageInput">
           <input id="imageInput" type="file" accept="image/*" />
           <span>Upload screenshot/image</span>
+          <p class="dropzone-hint">Tip: drag &amp; drop an image here or paste from clipboard.</p>
         </label>
         <div class="button-row">
           <button id="demoUi" type="button">Load demo UI</button>

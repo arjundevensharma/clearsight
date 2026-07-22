@@ -65,6 +65,7 @@ const dom = {
   contrastBg: document.getElementById('contrastBg'),
   contrastTextHex: document.getElementById('contrastTextHex'),
   contrastBgHex: document.getElementById('contrastBgHex'),
+  imageDropzone: document.getElementById('imageDropzone'),
   contrastOut: document.getElementById('contrastOut'),
   contrastBtn: document.getElementById('contrastBtn'),
   suggestBtn: document.getElementById('suggestBtn'),
@@ -144,6 +145,13 @@ function clearDemoCopyStatus() {
   setDemoCopyStatus('');
 }
 
+function setDropzoneActive(active) {
+  if (!dom.imageDropzone) {
+    return;
+  }
+  dom.imageDropzone.classList.toggle('drag-over', Boolean(active));
+}
+
 async function copyTextToClipboard(text) {
   if (!text) {
     return false;
@@ -177,6 +185,31 @@ async function copyTextToClipboard(text) {
   } finally {
     document.body.removeChild(textarea);
   }
+}
+
+function getImageFromClipboardData(clipboardData) {
+  if (!clipboardData || !clipboardData.items) {
+    return null;
+  }
+
+  const imageItem = Array.from(clipboardData.items).find(
+    (item) => item.kind === 'file' && item.type.startsWith('image/'),
+  );
+  return imageItem ? imageItem.getAsFile() : null;
+}
+
+function handleImageInput(file, contextLabel) {
+  if (!file) {
+    setMessage('No valid image file found. Use PNG, JPG, WebP, or GIF.', 'error');
+    return;
+  }
+
+  const fileLabel = file.name || 'Image';
+  setMessage(
+    `${contextLabel ? `${contextLabel}: ` : ''}${fileLabel}. Rendering...`,
+    'info',
+  );
+  readImageAndRender(file);
 }
 
 function setDefaultSuggestionsState() {
@@ -1015,9 +1048,54 @@ function init() {
       setMessage('No file selected.', 'error');
       return;
     }
+    if (!isSupportedImageFile(file)) {
+      setMessage('The selected file is not a supported image.', 'error');
+      return;
+    }
+    handleImageInput(file, 'Loaded image');
+  });
 
-    setMessage(`Loaded ${file.name}. Rendering...`, 'info');
-    readImageAndRender(file);
+  if (dom.imageDropzone) {
+    const preventDefaults = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    };
+
+    const handleDragOver = (event) => {
+      preventDefaults(event);
+      setDropzoneActive(true);
+    };
+
+    const handleDragLeave = (event) => {
+      preventDefaults(event);
+      setDropzoneActive(false);
+    };
+
+    const handleDrop = (event) => {
+      preventDefaults(event);
+      setDropzoneActive(false);
+      const file = Array.from(event.dataTransfer?.files || []).find(isSupportedImageFile);
+      if (!file) {
+        setMessage('Drop failed: no supported image file found.', 'error');
+        return;
+      }
+      handleImageInput(file, 'Dropped image');
+    };
+
+    ['dragenter', 'dragover'].forEach((type) => {
+      dom.imageDropzone.addEventListener(type, handleDragOver);
+    });
+    dom.imageDropzone.addEventListener('dragleave', handleDragLeave);
+    dom.imageDropzone.addEventListener('drop', handleDrop);
+  }
+
+  window.addEventListener('paste', (event) => {
+    const file = getImageFromClipboardData(event.clipboardData);
+    if (!file) {
+      return;
+    }
+    event.preventDefault();
+    handleImageInput(file, 'Pasted image');
   });
 
   dom.demoUi.addEventListener('click', () => loadSample('ui'));

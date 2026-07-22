@@ -37,6 +37,7 @@ The project is intentionally scoped for a one-day build:
 - [x] Add simulation impact ranking to make high-risk vision modes immediately visible after render.
 - [x] Add source-vs-simulated slider comparison inside each simulation card.
 - [x] Add unit/integration coverage for impact metric calculations.
+- [x] Add drag-and-drop image loading and clipboard-paste upload flow for faster demo iterations.
 
 ## Architecture
 ### File layout

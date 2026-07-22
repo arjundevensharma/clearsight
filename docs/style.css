@@ -110,10 +110,24 @@ h3 {
   text-align: center;
   font-weight: 600;
   cursor: pointer;
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
 }
 
 .dropzone input {
   display: none;
+}
+
+.dropzone-hint {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.dropzone.drag-over {
+  border-color: var(--accent);
+  background: #eff6ff;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);
 }
 
 .button-row {
