@@ -2175,9 +2175,15 @@ function downloadSubmissionPackage() {
       makeExportFileName('submission-report', 'json'),
       'application/json;charset=utf-8',
     );
+    const markdown = buildJudgeSummaryMarkdown();
+    downloadTextFile(
+      markdown,
+      makeExportFileName('judge-summary', 'md'),
+      'text/markdown;charset=utf-8',
+    );
 
     setMessage(
-      `Submission package exported: ${entries.length} visuals, contact sheet, and JSON report.`,
+      `Submission package exported: ${entries.length} visuals, contact sheet, JSON report, and judge summary.`,
       'success',
     );
   } catch (error) {
