@@ -26,6 +26,9 @@ const CONTACT_SHEET_MAX_TILE_WIDTH = 420;
 const CONTACT_SHEET_COLUMNS = 3;
 const CONTACT_SHEET_GUTTER = 20;
 const CONTACT_SHEET_LABEL_HEIGHT = 44;
+const AA_THRESHOLD_DEFAULT = 4.5;
+const AA_THRESHOLD_LARGE_TEXT = 3;
+const AAA_THRESHOLD_DEFAULT = 7;
 
 const state = {
   sourceImage: null,
@@ -39,6 +42,7 @@ const state = {
   lastSuggestionPairs: [],
   simulationSeverityPercent: SIMULATION_SEVERITY_DEFAULT_PERCENT,
   pendingSeverityRerender: false,
+  currentContrastAaThreshold: AA_THRESHOLD_DEFAULT,
 };
 
 let simulationSeverityRerenderTimer = null;
@@ -81,6 +85,7 @@ const dom = {
   contrastBg: document.getElementById('contrastBg'),
   contrastTextHex: document.getElementById('contrastTextHex'),
   contrastBgHex: document.getElementById('contrastBgHex'),
+  contrastLargeText: document.getElementById('contrastLargeText'),
   imageDropzone: document.getElementById('imageDropzone'),
   contrastOut: document.getElementById('contrastOut'),
   contrastBtn: document.getElementById('contrastBtn'),
@@ -219,10 +224,11 @@ function renderAccessibilitySummary() {
 
   if (state.lastContrastResult) {
     bullets.push(
-      `Contrast: <strong>${state.lastContrastResult.ratio.toFixed(1)}:1</strong> (AA ${state.lastContrastResult.passesAA ? 'PASS' : 'FAIL'}, AAA ${state.lastContrastResult.passesAAA ? 'PASS' : 'FAIL'}).`,
+      `Contrast: <strong>${state.lastContrastResult.ratio.toFixed(1)}:1</strong> (AA ${state.currentContrastAaThreshold === AA_THRESHOLD_LARGE_TEXT ? '3.0' : '4.5'}:1 ${state.lastContrastResult.passesAA ? 'PASS' : 'FAIL'}, AAA 7:1 ${state.lastContrastResult.passesAAA ? 'PASS' : 'FAIL'}).`,
     );
     if (!state.lastContrastResult.passesAA) {
-      bullets.push('Raise contrast to at least 4.5:1 to satisfy AA baseline requirements.');
+      const requiredAa = state.currentContrastAaThreshold === AA_THRESHOLD_LARGE_TEXT ? 3 : 4.5;
+      bullets.push(`Raise contrast to at least ${requiredAa.toFixed(1)}:1 to satisfy AA baseline requirements.`);
     }
   } else {
     bullets.push('Run the contrast checker to add WCAG validation to this snapshot.');
@@ -442,6 +448,7 @@ function clearWorkspace({ notify = true } = {}) {
   state.modeImpacts = [];
   state.lastContrastResult = null;
   state.lastSuggestionPairs = [];
+  state.currentContrastAaThreshold = AA_THRESHOLD_DEFAULT;
   state.pendingSeverityRerender = false;
   if (simulationSeverityRerenderTimer) {
     clearTimeout(simulationSeverityRerenderTimer);
@@ -1656,6 +1663,9 @@ function buildAccessibilityReport() {
             passesAA: state.lastContrastResult.passesAA,
             passesAAA: state.lastContrastResult.passesAAA,
             passesLAA: state.lastContrastResult.passesLAA,
+            aaThreshold: state.lastContrastResult.aaThreshold ?? AA_THRESHOLD_DEFAULT,
+            aaaThreshold: state.lastContrastResult.aaaThreshold ?? AAA_THRESHOLD_DEFAULT,
+            largeTextMode: Boolean(dom.contrastLargeText?.checked),
           }
         : null,
     },
@@ -1697,14 +1707,20 @@ function renderContrastResult() {
   clearContrastValidation();
   try {
     const { text, background } = resolveContrastInputs();
-    const result = evaluateContrast(text, background);
+    const aaThreshold = (dom.contrastLargeText?.checked ? AA_THRESHOLD_LARGE_TEXT : AA_THRESHOLD_DEFAULT);
+    const result = evaluateContrast(text, background, aaThreshold, AAA_THRESHOLD_DEFAULT);
     const ratio = result.ratio.toFixed(2);
-    state.lastContrastResult = result;
+    state.currentContrastAaThreshold = aaThreshold;
+    state.lastContrastResult = {
+      ...result,
+      aaThreshold,
+      aaaThreshold: AAA_THRESHOLD_DEFAULT,
+    };
     renderAccessibilitySummary();
     dom.contrastOut.innerHTML = `
       <span>Contrast: <strong>${ratio}:1</strong></span>
-      <span>AA: <strong>${result.passesAA ? 'PASS' : 'FAIL'}</strong></span>
-      <span>AAA: <strong>${result.passesAAA ? 'PASS' : 'FAIL'}</strong></span>
+      <span>AA (${state.currentContrastAaThreshold.toFixed(1)}): <strong>${result.passesAA ? 'PASS' : 'FAIL'}</strong></span>
+      <span>AAA (${state.lastContrastResult.aaaThreshold.toFixed(1)}): <strong>${result.passesAAA ? 'PASS' : 'FAIL'}</strong></span>
       <span>Large text AA: <strong>${result.passesLAA ? 'PASS' : 'FAIL'}</strong></span>
     `;
     setMessage('Contrast checked successfully.', 'success');
@@ -1713,6 +1729,7 @@ function renderContrastResult() {
     dom.contrastOut.textContent = error.message;
     setContrastValidation(error.message);
     state.lastContrastResult = null;
+    state.currentContrastAaThreshold = AA_THRESHOLD_DEFAULT;
     renderAccessibilitySummary();
     setMessage(error.message, 'error');
     return null;
@@ -1733,7 +1750,8 @@ function renderSuggestions() {
 
   let suggestions;
   try {
-    suggestions = suggestAccessiblePairs(dom.contrastTextHex.value, dom.contrastBgHex.value, 4.5, 4);
+    const target = state.currentContrastAaThreshold ?? AA_THRESHOLD_DEFAULT;
+    suggestions = suggestAccessiblePairs(dom.contrastTextHex.value, dom.contrastBgHex.value, target, 4);
   } catch (error) {
     state.lastSuggestionPairs = [];
     setMessage(error.message, 'error');
@@ -2016,6 +2034,14 @@ function init() {
   syncHexWithPicker(dom.contrastBg, dom.contrastBgHex, 'Background');
   dom.contrastText.addEventListener('change', renderContrastResult);
   dom.contrastBg.addEventListener('change', renderContrastResult);
+  if (dom.contrastLargeText) {
+    dom.contrastLargeText.checked = false;
+    dom.contrastLargeText.addEventListener('change', () => {
+      if (state.lastContrastResult) {
+        renderContrastResult();
+      }
+    });
+  }
 
   window.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && !dom.previewModal?.hidden) {

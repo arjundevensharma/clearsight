@@ -50,6 +50,7 @@ The project is intentionally scoped for a one-day build:
 - [x] Add live auto-re-render for severity slider changes with debounced updates (no manual re-run needed).
 - [x] Add one-click top-impact export pack for source + highest-impact simulations with a compact contact sheet.
 - [x] Add inspectable full-size simulation preview modal with direct download for focused judging review.
+- [x] Make WCAG contrast checker context-aware with large-text AA threshold support (3:1) and align suggestions/reporting output.
 
 ## Architecture
 ### File layout
