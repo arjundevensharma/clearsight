@@ -181,6 +181,14 @@ button:hover:not(:disabled) {
   outline-offset: 2px;
 }
 
+#topImpactFilterBtn[aria-pressed='true'] {
+  background: var(--accent);
+}
+
+#topImpactFilterBtn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
 .link-btn {
   border: 0;
   padding: 0.6rem 0.95rem;
@@ -333,6 +341,10 @@ kbd {
   border-radius: 12px;
   padding: 0.6rem;
   transition: border-color 140ms ease, transform 140ms ease;
+}
+
+.sim-card.is-filtered-out {
+  display: none;
 }
 
 .sim-card-header {

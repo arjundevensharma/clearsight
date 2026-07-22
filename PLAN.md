@@ -54,6 +54,7 @@ The project is intentionally scoped for a one-day build:
 - [x] Add inspectable full-size simulation preview modal with direct download for focused judging review.
 - [x] Make WCAG contrast checker context-aware with large-text AA threshold support (3:1) and align suggestions/reporting output.
 - [x] Add source-image color picker controls for direct contrast text/background sampling from the rendered source.
+- [x] Add quick-access top-impact simulations filter toggle for rapid high-risk review during demos.
 
 ## Architecture
 ### File layout

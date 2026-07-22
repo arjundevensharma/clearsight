@@ -23,6 +23,7 @@ const IMPACT_LEVEL = {
 };
 const COMPARE_DEFAULT_PERCENT = 50;
 const SIMULATION_SEVERITY_DEFAULT_PERCENT = 100;
+const TOP_IMPACT_FILTER_LIMIT = 3;
 const CONTACT_SHEET_MAX_TILE_WIDTH = 420;
 const CONTACT_SHEET_COLUMNS = 3;
 const CONTACT_SHEET_GUTTER = 20;
@@ -48,6 +49,7 @@ const state = {
   pendingSeverityRerender: false,
   currentContrastAaThreshold: AA_THRESHOLD_DEFAULT,
   activeColorPickerTarget: null,
+  showTopImpactOnly: false,
 };
 
 let simulationSeverityRerenderTimer = null;
@@ -110,6 +112,7 @@ const dom = {
   globalCompareValue: document.getElementById('globalCompareValue'),
   simulationSeveritySlider: document.getElementById('simulationSeveritySlider'),
   simulationSeverityValue: document.getElementById('simulationSeverityValue'),
+  topImpactFilterBtn: document.getElementById('topImpactFilterBtn'),
   previewModal: document.getElementById('previewModal'),
   previewModalBackdrop: document.getElementById('previewModalBackdrop'),
   previewModalContent: document.querySelector('.preview-modal-content'),
@@ -656,6 +659,9 @@ function setImageControlsEnabled(enabled) {
   if (dom.simulationSeveritySlider) {
     dom.simulationSeveritySlider.disabled = !enabled;
   }
+  if (dom.topImpactFilterBtn) {
+    dom.topImpactFilterBtn.disabled = !enabled || !state.sourceImage;
+  }
   if (dom.clearWorkspaceBtn) {
     dom.clearWorkspaceBtn.disabled = !enabled || !state.sourceImage;
   }
@@ -679,6 +685,7 @@ function clearWorkspace({ notify = true } = {}) {
   state.lastContrastResult = null;
   state.lastSuggestionPairs = [];
   state.currentContrastAaThreshold = AA_THRESHOLD_DEFAULT;
+  state.showTopImpactOnly = false;
   clearColorPicker();
   state.pendingSeverityRerender = false;
   if (simulationSeverityRerenderTimer) {
@@ -701,6 +708,7 @@ function clearWorkspace({ notify = true } = {}) {
   renderAccessibilitySummary();
 
   renderModeCards();
+  applyTopImpactFilter();
   setSimPlaceholderVisible(true);
   setImpactSummary([]);
   dom.contrastOut.textContent = '';
@@ -937,6 +945,77 @@ function reorderSimulationCardsByImpact(results = state.modeImpacts) {
     }
     dom.simGrid.append(entry.card);
   });
+}
+
+function getTopImpactModeIds(limit = TOP_IMPACT_FILTER_LIMIT) {
+  const candidates = state.modeImpacts.filter((entry) => typeof entry.impactPercent === 'number');
+  const safeLimit = Number.isFinite(Number(limit))
+    ? Math.max(1, Math.min(candidates.length, Math.floor(Number(limit))))
+    : TOP_IMPACT_FILTER_LIMIT;
+
+  if (!candidates.length || !safeLimit) {
+    return [];
+  }
+
+  return [...candidates]
+    .sort((a, b) => b.impactPercent - a.impactPercent)
+    .slice(0, safeLimit)
+    .map((entry) => entry.modeId);
+}
+
+function applyTopImpactFilter({ announce = false } = {}) {
+  const cards = [...dom.simGrid.querySelectorAll('.sim-card')];
+  if (!dom.topImpactFilterBtn || !cards.length) {
+    if (dom.topImpactFilterBtn) {
+      dom.topImpactFilterBtn.setAttribute('aria-pressed', 'false');
+      dom.topImpactFilterBtn.classList.remove('is-active');
+      dom.topImpactFilterBtn.textContent = 'Show top-impact simulations only';
+      dom.topImpactFilterBtn.disabled = !state.sourceImage;
+    }
+    return;
+  }
+
+  const topImpactModeIds = new Set(getTopImpactModeIds());
+  const hasImpactData = topImpactModeIds.size > 0;
+
+  if (!state.showTopImpactOnly || !hasImpactData) {
+    state.showTopImpactOnly = false;
+    cards.forEach((card) => {
+      card.classList.remove('is-filtered-out');
+    });
+    dom.topImpactFilterBtn.setAttribute('aria-pressed', 'false');
+    dom.topImpactFilterBtn.classList.remove('is-active');
+    dom.topImpactFilterBtn.textContent = 'Show top-impact simulations only';
+    dom.topImpactFilterBtn.disabled = !state.hasRenderedSource || !state.modeImpacts.length;
+    return;
+  }
+
+  cards.forEach((card) => {
+    card.classList.toggle('is-filtered-out', !topImpactModeIds.has(card.dataset.mode));
+  });
+  dom.topImpactFilterBtn.setAttribute('aria-pressed', 'true');
+  dom.topImpactFilterBtn.classList.add('is-active');
+  dom.topImpactFilterBtn.textContent = `Showing top ${topImpactModeIds.size} simulations`;
+  dom.topImpactFilterBtn.disabled = false;
+
+  if (announce) {
+    setMessage(`Showing top ${topImpactModeIds.size} high-impact simulations.`, 'info');
+  }
+}
+
+function toggleTopImpactFilter() {
+  if (!state.hasRenderedSource || !state.modeImpacts.length) {
+    setMessage('Render simulations first before filtering by impact.', 'info');
+    return;
+  }
+
+  if (!state.modeImpacts.some((entry) => typeof entry.impactPercent === 'number')) {
+    setMessage('Impact values are not available yet. Re-render simulations to recalculate.', 'error');
+    return;
+  }
+
+  state.showTopImpactOnly = !state.showTopImpactOnly;
+  applyTopImpactFilter({ announce: true });
 }
 
 function setControlState(enabled) {
@@ -1457,8 +1536,11 @@ async function renderAll() {
 
   state.isRendering = true;
   state.hasRenderedSource = false;
+  state.modeImpacts = [];
+  state.showTopImpactOnly = false;
   clearColorPicker();
   markSimulationCardsPending();
+  applyTopImpactFilter();
   setSimPlaceholderVisible(false);
 
   setControlState(true);
@@ -1482,8 +1564,6 @@ async function renderAll() {
     state.sourceImageData = sourceCtx.getImageData(0, 0, sourceSize.width, sourceSize.height);
     state.hasRenderedSource = true;
     showSourceMeta(state.sourceName, sourceSize.width, sourceSize.height);
-    state.modeImpacts = [];
-
     for (const mode of allModes) {
       // eslint-disable-next-line no-await-in-loop
       const result = await renderMode(mode, sourceSize);
@@ -1499,6 +1579,7 @@ async function renderAll() {
       .sort((a, b) => b.impactPercent - a.impactPercent);
     reorderSimulationCardsByImpact(state.modeImpacts);
     setImpactSummary(sortedByImpact);
+    applyTopImpactFilter();
 
   const topImpact = sortedByImpact[0];
     if (topImpact) {
@@ -1519,6 +1600,7 @@ async function renderAll() {
     const shouldRerenderSeverity = state.pendingSeverityRerender;
     state.pendingSeverityRerender = false;
     setImageControlsEnabled(Boolean(state.sourceImage));
+    applyTopImpactFilter();
     syncGlobalCompare(dom.globalCompareSlider?.value || COMPARE_DEFAULT_PERCENT);
     if (!state.modeImpacts.length) {
       setImpactSummary([]);
@@ -2230,6 +2312,7 @@ function init() {
       setMessage(`Simulation intensity set to ${severity}%.`, 'info');
     });
   }
+  dom.topImpactFilterBtn?.addEventListener('click', toggleTopImpactFilter);
   dom.contrastBtn.addEventListener('click', renderContrastResult);
   dom.suggestBtn.addEventListener('click', renderSuggestions);
   dom.copyDemoScriptBtn?.addEventListener('click', () => {
