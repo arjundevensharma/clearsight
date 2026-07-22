@@ -48,6 +48,7 @@ The project is intentionally scoped for a one-day build:
 - [x] Add an accessibility health summary panel combining top-impact simulation delta and contrast status.
 - [x] Add global simulation intensity slider to tune matrix/filter severity across all preview modes.
 - [x] Add one-click top-impact export pack for source + highest-impact simulations with a compact contact sheet.
+- [x] Add inspectable full-size simulation preview modal with direct download for focused judging review.
 
 ## Architecture
 ### File layout

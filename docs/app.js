@@ -94,6 +94,14 @@ const dom = {
   globalCompareValue: document.getElementById('globalCompareValue'),
   simulationSeveritySlider: document.getElementById('simulationSeveritySlider'),
   simulationSeverityValue: document.getElementById('simulationSeverityValue'),
+  previewModal: document.getElementById('previewModal'),
+  previewModalBackdrop: document.getElementById('previewModalBackdrop'),
+  previewModalContent: document.querySelector('.preview-modal-content'),
+  previewModalTitle: document.getElementById('previewModalTitle'),
+  previewModalMeta: document.getElementById('previewModalMeta'),
+  previewModalImage: document.getElementById('previewModalImage'),
+  previewModalDownloadBtn: document.getElementById('previewModalDownloadBtn'),
+  previewModalCloseBtn: document.getElementById('previewModalCloseBtn'),
 };
 
 function getImpactLevel(impactPercent) {
@@ -247,6 +255,63 @@ function clearDemoCopyStatus() {
   setDemoCopyStatus('');
 }
 
+function closePreviewModal() {
+  if (!dom.previewModal || !dom.previewModalImage) {
+    return;
+  }
+
+  dom.previewModal.hidden = true;
+  dom.previewModal.setAttribute('aria-hidden', 'true');
+  dom.previewModalImage.src = '';
+  dom.previewModalImage.removeAttribute('src');
+  document.body.style.overflow = '';
+}
+
+function getModeImpactById(modeId) {
+  return state.modeImpacts.find((entry) => entry.modeId === modeId);
+}
+
+function openPreviewModal({ modeId, label, canvas }) {
+  if (!dom.previewModal || !dom.previewModalTitle || !dom.previewModalMeta || !dom.previewModalImage) {
+    setMessage('Preview modal is unavailable in this browser.', 'error');
+    return;
+  }
+
+  if (!canvas || !canvas.width || !canvas.height) {
+    setMessage('Render this simulation before previewing it.', 'error');
+    return;
+  }
+
+  const impact = getModeImpactById(modeId);
+  const impactText =
+    typeof impact?.impactPercent === 'number'
+      ? `${impact.impactPercent.toFixed(1)}% pixel delta`
+      : 'Impact pending';
+
+  dom.previewModalTitle.textContent = `${label} preview`;
+  dom.previewModalMeta.textContent = `${impactText} • ${canvas.width}×${canvas.height}px`;
+  dom.previewModalImage.alt = `${label} preview image`;
+  dom.previewModalImage.src = canvas.toDataURL('image/png');
+  dom.previewModal.hidden = false;
+  dom.previewModal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
+
+  if (dom.previewModalDownloadBtn) {
+    dom.previewModalDownloadBtn.onclick = () => {
+      try {
+        downloadCanvasAsImage(canvas, makeExportFileName(modeId));
+        setMessage(`Downloaded ${label} preview.`, 'success');
+      } catch (error) {
+        setMessage(error.message, 'error');
+      }
+    };
+  }
+
+  if (dom.previewModalCloseBtn) {
+    dom.previewModalCloseBtn.focus();
+  }
+}
+
 function setDropzoneActive(active) {
   if (!dom.imageDropzone) {
     return;
@@ -379,6 +444,8 @@ function clearWorkspace({ notify = true } = {}) {
     dom.imageInput.value = '';
   }
 
+  closePreviewModal();
+
   const sourceCtx = dom.sourceCanvas.getContext('2d');
   if (sourceCtx) {
     sourceCtx.clearRect(0, 0, dom.sourceCanvas.width, dom.sourceCanvas.height);
@@ -407,7 +474,7 @@ function markSimulationCardsPending() {
   const cards = dom.simGrid.querySelectorAll('.sim-card');
   cards.forEach((card) => {
     const status = card.querySelector('.sim-status');
-    const exportBtn = card.querySelector('.tiny-btn');
+    const actionButtons = card.querySelectorAll('.tiny-btn');
     const slider = card.querySelector('.sim-compare-slider');
     const rank = card.querySelector('.sim-rank');
     card.classList.remove('impact-high', 'impact-medium', 'impact-low');
@@ -415,9 +482,9 @@ function markSimulationCardsPending() {
       status.textContent = 'Waiting for source';
       status.className = 'sim-status';
     }
-    if (exportBtn) {
-      exportBtn.disabled = true;
-    }
+    actionButtons.forEach((button) => {
+      button.disabled = true;
+    });
     if (slider) {
       slider.disabled = true;
       slider.value = String(globalCompareValue);
@@ -691,7 +758,26 @@ function createModeCard(mode) {
     }
   });
 
-  header.append(titleWrap, downloadBtn);
+  const inspectBtn = document.createElement('button');
+  inspectBtn.type = 'button';
+  inspectBtn.className = 'tiny-btn sim-inspect-btn';
+  inspectBtn.textContent = 'Inspect';
+  inspectBtn.disabled = true;
+  inspectBtn.setAttribute('aria-label', `Open ${mode.label} full-size preview`);
+  inspectBtn.addEventListener('click', () => {
+    const canvas = card.querySelector('.sim-canvas');
+    openPreviewModal({
+      modeId: mode.id,
+      label: mode.label,
+      canvas,
+    });
+  });
+
+  const actions = document.createElement('div');
+  actions.className = 'sim-card-actions';
+  actions.append(downloadBtn, inspectBtn);
+
+  header.append(titleWrap, actions);
 
   const compareWrap = document.createElement('div');
   compareWrap.className = 'sim-compare';
@@ -979,7 +1065,7 @@ async function renderMode(mode, sourceSize) {
 
   const canvas = card.querySelector('.sim-canvas');
   const status = card.querySelector('.sim-status');
-  const exportBtn = card.querySelector('.tiny-btn');
+  const actionButtons = card.querySelectorAll('.tiny-btn');
   const sourceCanvas = card.querySelector('.sim-source-canvas');
   const slider = card.querySelector('.sim-compare-slider');
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -998,9 +1084,9 @@ async function renderMode(mode, sourceSize) {
   card.classList.remove('impact-high', 'impact-medium', 'impact-low');
   status.textContent = 'Rendering...';
   status.className = 'sim-status loading';
-  if (exportBtn) {
-    exportBtn.disabled = true;
-  }
+  actionButtons.forEach((button) => {
+    button.disabled = true;
+  });
   if (slider) {
     slider.disabled = true;
   }
@@ -1049,9 +1135,9 @@ async function renderMode(mode, sourceSize) {
       impactPercent === null ? 'Done' : `Done · ${impactPercent.toFixed(1)}% pixel change`;
     status.className = 'sim-status done';
     card.classList.add('is-done');
-    if (exportBtn) {
-      exportBtn.disabled = false;
-    }
+    actionButtons.forEach((button) => {
+      button.disabled = false;
+    });
     if (slider) {
       slider.disabled = false;
     }
@@ -1067,9 +1153,9 @@ async function renderMode(mode, sourceSize) {
     status.textContent = error.message || 'Render failed';
     status.className = 'sim-status error';
     card.classList.add('is-error');
-    if (exportBtn) {
-      exportBtn.disabled = true;
-    }
+    actionButtons.forEach((button) => {
+      button.disabled = true;
+    });
     return {
       modeId: mode.id,
       label: mode.label,
@@ -1855,10 +1941,37 @@ function init() {
     copyDemoText('checklist').catch(() => setDemoCopyStatus('Clipboard copy was interrupted.'));
   });
 
+  if (dom.previewModalCloseBtn) {
+    dom.previewModalCloseBtn.addEventListener('click', closePreviewModal);
+  }
+  if (dom.previewModalBackdrop) {
+    dom.previewModalBackdrop.addEventListener('click', closePreviewModal);
+  }
+  if (dom.previewModal) {
+    dom.previewModal.addEventListener('click', (event) => {
+      if (!dom.previewModal || event.target === dom.previewModalContent) {
+        return;
+      }
+      if (
+        event.target === dom.previewModal ||
+        event.target === dom.previewModalBackdrop ||
+        event.target.getAttribute?.('data-action') === 'close'
+      ) {
+        closePreviewModal();
+      }
+    });
+  }
+
   syncHexWithPicker(dom.contrastText, dom.contrastTextHex, 'Text');
   syncHexWithPicker(dom.contrastBg, dom.contrastBgHex, 'Background');
   dom.contrastText.addEventListener('change', renderContrastResult);
   dom.contrastBg.addEventListener('change', renderContrastResult);
+
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && !dom.previewModal?.hidden) {
+      closePreviewModal();
+    }
+  });
 
   renderAccessibilitySummary();
 
