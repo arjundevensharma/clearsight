@@ -37,6 +37,16 @@ const COLOR_PICKER_SOURCE_CLASS = 'is-picking-color';
 const SETTINGS_STORAGE_KEY = 'clearsight-settings-v1';
 const RENDER_PROGRESS_TIMEOUT_MS = 900;
 
+function yieldToNextAnimationFrame() {
+  return new Promise((resolve) => {
+    if (typeof requestAnimationFrame !== 'function') {
+      resolve();
+      return;
+    }
+    requestAnimationFrame(() => resolve());
+  });
+}
+
 const state = {
   sourceImage: null,
   sourceName: '',
@@ -1797,6 +1807,7 @@ async function renderAll() {
     for (let modeIndex = 0; modeIndex < allModes.length; modeIndex += 1) {
       const mode = allModes[modeIndex];
       setRenderProgress(modeIndex + 1, totalModes, `Rendering ${mode.label}`);
+      await yieldToNextAnimationFrame();
       // eslint-disable-next-line no-await-in-loop
       const result = await renderMode(mode, sourceSize);
       if (result) {

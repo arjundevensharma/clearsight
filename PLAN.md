@@ -64,6 +64,7 @@ The project is intentionally scoped for a one-day build:
 - [x] Persist demo settings across reloads (global comparison, simulation intensity, contrast defaults, large-text mode) for frictionless repeat demos.
 - [x] Fix runtime blockers from a syntax regression by removing an extra closing brace in `docs/app.js` and `docs/current/app.js` so the app parses and runs reliably.
 - [x] Add a real-time simulation render progress rail with per-mode completion feedback.
+- [x] Add frame-friendly simulation rendering by yielding to `requestAnimationFrame` between mode passes so progress and controls remain responsive on larger images.
 
 ## Architecture
 ### File layout
