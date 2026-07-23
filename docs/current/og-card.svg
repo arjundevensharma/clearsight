@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#07111f"/><stop offset="1" stop-color="#142b45"/></linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#42e8c6"/><stop offset="1" stop-color="#5da9ff"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="18" stdDeviation="24" flood-color="#020817" flood-opacity=".42"/></filter>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1115" cy="-40" r="280" fill="#1683b4" opacity=".18"/>
+  <circle cx="50" cy="650" r="260" fill="#14b8a6" opacity=".12"/>
+  <g font-family="Inter,Segoe UI,Arial,sans-serif">
+    <g transform="translate(68 62)">
+      <rect width="46" height="46" rx="13" fill="url(#accent)"/>
+      <path d="M12 24l7 7 15-17" fill="none" stroke="#07111f" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="61" y="35" fill="#f8fafc" font-size="34" font-weight="750">ClearSight</text>
+    </g>
+    <text x="68" y="192" fill="#9cefe0" font-size="19" font-weight="700" letter-spacing="2.4">PRIVATE ACCESSIBILITY INTELLIGENCE</text>
+    <text x="68" y="259" fill="#f8fafc" font-size="54" font-weight="780">Turn screenshots into</text>
+    <text x="68" y="322" fill="url(#accent)" font-size="54" font-weight="780">proof you can ship.</text>
+    <text x="68" y="382" fill="#cbd5e1" font-size="23">Detect → repair → verify across six evidence-backed axes.</text>
+    <g transform="translate(68 432)" fill="#dce9f5" font-size="18" font-weight="650">
+      <text x="0" y="22">✓ No upload</text><text x="155" y="22">✓ WCAG 2.2 evidence</text><text x="390" y="22">✓ Exportable proof</text>
+    </g>
+    <g transform="translate(760 92)" filter="url(#shadow)">
+      <rect width="370" height="445" rx="28" fill="#f8fafc"/>
+      <text x="32" y="48" fill="#166f65" font-size="15" font-weight="750" letter-spacing="1.2">● LOCAL AUDIT COMPLETE</text>
+      <text x="286" y="48" fill="#334155" font-size="15" font-weight="700">GRADE B</text>
+      <circle cx="105" cy="148" r="66" fill="none" stroke="#dbe7ee" stroke-width="14"/>
+      <circle cx="105" cy="148" r="66" fill="none" stroke="#16a38c" stroke-width="14" stroke-linecap="round" stroke-dasharray="336 415" transform="rotate(-90 105 148)"/>
+      <text x="105" y="157" text-anchor="middle" fill="#0f172a" font-size="42" font-weight="800">81</text>
+      <text x="197" y="124" fill="#64748b" font-size="15">ClearSight Score</text>
+      <text x="197" y="162" fill="#0f172a" font-size="29" font-weight="750"><tspan fill="#94a3b8">79</tspan> → 81</text>
+      <text x="197" y="188" fill="#16806f" font-size="14" font-weight="650">Verified after repair</text>
+      <line x1="32" y1="238" x2="338" y2="238" stroke="#dbe7ee"/>
+      <g font-size="16"><text x="32" y="280" fill="#64748b">Text contrast</text><text x="310" y="280" text-anchor="end" fill="#b45309" font-weight="700">1 risk</text>
+      <text x="32" y="322" fill="#64748b">Component surface</text><text x="310" y="322" text-anchor="end" fill="#16806f" font-weight="700">FIXED</text>
+      <text x="32" y="364" fill="#64748b">Tap targets</text><text x="310" y="364" text-anchor="end" fill="#b45309" font-weight="700">3 risks</text></g>
+      <rect x="32" y="391" width="306" height="1" fill="#dbe7ee"/>
+      <text x="185" y="424" text-anchor="middle" fill="#475569" font-size="13" font-weight="650">12 SIMULATIONS · 6 AUDIT AXES</text>
+    </g>
+    <text x="68" y="568" fill="#7f9bb5" font-size="17">arjundevensharma.github.io/clearsight</text>
+  </g>
+</svg>

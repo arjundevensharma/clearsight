@@ -21,6 +21,9 @@
   - Achromatopsia
   - Low Vision: Blur
   - Low Vision: Low Contrast
+  - Low Vision: Cataracts (haze + glare)
+  - Low Vision: Glaucoma (tunnel vision)
+  - Low Vision: Macular degeneration (central loss)
 - Mention this helps teams see likely user experience losses instantly.
 
 ## 1:25–2:05 | Contrast checker
@@ -31,6 +34,11 @@
 ## 2:05–2:35 | Accessible alternatives
 - Click “suggest replacement palette.”
 - Demonstrate copying a suggestion and re-checking contrast.
+
+## Production tip
+- Click **Export vision reel (video)** after rendering: ClearSight records a ready-made WebM
+  that cycles the original view and all twelve simulations with labels and impact percentages.
+  Splice it directly into the 0:40–1:25 segment instead of screen-recording the strip by hand.
 
 ## 2:35–3:00 | Closing
 - “ClearSight gives teams fast visual empathy + concrete fixes in one pass, fully in-browser and privacy-safe.”

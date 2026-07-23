@@ -4,6 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test"
+    "build": "node scripts/build.mjs",
+    "test": "node --test",
+    "audit": "node scripts/audit-cli.mjs",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^25.3.0"
   }
 }

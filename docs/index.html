@@ -3,56 +3,377 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ClearSight | Accessibility Vision Simulator</title>
+    <title>ClearSight — Turn screenshots into accessibility proof</title>
     <meta
       name="description"
-      content="Client-side color vision and low-vision simulator with contrast checker."
+      content="Find, repair, and verify visual accessibility failures across six evidence-backed axes. Private, on-device, and built for WCAG 2.2 handoff."
     />
+    <link rel="canonical" href="https://arjundevensharma.github.io/clearsight/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ClearSight" />
+    <meta property="og:title" content="ClearSight — Turn screenshots into accessibility proof" />
+    <meta property="og:description" content="Find, repair, and verify visual accessibility failures locally across six evidence-backed axes." />
+    <meta property="og:url" content="https://arjundevensharma.github.io/clearsight/" />
+    <meta property="og:image" content="https://arjundevensharma.github.io/clearsight/og-card.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="ClearSight accessibility audit showing a verified score improvement and six audit axes." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ClearSight — Turn screenshots into accessibility proof" />
+    <meta name="twitter:description" content="Private, on-device visual accessibility auditing with verified repair evidence." />
+    <meta name="twitter:image" content="https://arjundevensharma.github.io/clearsight/og-card.png" />
+    <meta name="twitter:image:alt" content="ClearSight accessibility audit showing a verified score improvement and six audit axes." />
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="icon" href="./app-icon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="./style.css" />
   </head>
   <body>
+    <a class="skip-link" href="#source-title">Skip to source workflow</a>
+
     <main class="container">
       <header class="hero">
-        <p class="kicker">Global Tech Innovation Challenge</p>
-        <h1>ClearSight</h1>
-        <p>
-          See your UI through the eyes of users with color vision deficiency and low vision.
-          All processing is local; no image leaves your browser.
-        </p>
+        <div class="hero-copy">
+          <p class="kicker">Private accessibility intelligence</p>
+          <h1>Turn one screenshot into <span>proof you can ship.</span></h1>
+          <p class="hero-lede">
+            ClearSight finds visual accessibility failures, repairs the pixels, and re-audits the
+            result across six evidence-backed axes — entirely in your browser.
+          </p>
+          <div class="hero-actions">
+            <button id="heroDemoBtn" type="button" class="primary-action hero-primary-action">
+              See the 90-second audit
+              <span aria-hidden="true">→</span>
+            </button>
+            <a class="hero-secondary-action" href="#source-title">Audit my screenshot</a>
+          </div>
+          <ul class="hero-trust-list" aria-label="ClearSight product guarantees">
+            <li><span aria-hidden="true">✓</span> No upload</li>
+            <li><span aria-hidden="true">✓</span> WCAG 2.2 evidence</li>
+            <li><span aria-hidden="true">✓</span> Exportable proof</li>
+          </ul>
+          <div class="offline-proof" aria-live="polite">
+            <span id="offlineStatus" class="offline-status is-checking">
+              <span class="offline-status-dot" aria-hidden="true"></span>
+              Preparing offline mode…
+            </span>
+            <button id="installAppBtn" type="button" class="tiny-btn" hidden>Install ClearSight</button>
+          </div>
+        </div>
+        <div class="hero-proof" aria-label="Example ClearSight verified repair result">
+          <div class="hero-proof-topline">
+            <span class="hero-proof-eyebrow"><span aria-hidden="true">●</span> Local audit complete</span>
+            <span class="hero-proof-grade">Grade B</span>
+          </div>
+          <div class="hero-proof-score">
+            <div class="hero-score-ring" aria-hidden="true"><strong>81</strong><span>/100</span></div>
+            <div>
+              <p>ClearSight Score</p>
+              <strong><span class="hero-score-before">79</span> → 81</strong>
+              <small>Verified after pixel repair</small>
+            </div>
+          </div>
+          <div class="hero-proof-findings">
+            <div><span>Text contrast</span><strong>1 <i>risk</i></strong></div>
+            <div><span>Component surface</span><strong class="is-fixed">Fixed</strong></div>
+            <div><span>Tap targets</span><strong>3 <i>risks</i></strong></div>
+          </div>
+          <div class="hero-proof-footer">
+            <span class="hero-proof-pulse" aria-hidden="true"></span>
+            12 simulations · 6 audit axes · pixels never uploaded
+          </div>
+        </div>
       </header>
 
-      <section class="card controls" aria-labelledby="source-title">
+      <section id="sharedAuditPanel" class="card shared-audit-panel" aria-labelledby="shared-audit-title" hidden>
+        <div class="shared-audit-heading">
+          <div>
+            <p class="section-kicker">Shared audit verdict</p>
+            <h2 id="shared-audit-title">Portable ClearSight review</h2>
+            <p id="sharedAuditMeta" class="muted"></p>
+          </div>
+          <div class="shared-audit-actions">
+            <button id="sharedAuditCopyBtn" type="button" class="tiny-btn">Copy this link</button>
+            <button id="sharedAuditPlanBtn" type="button" class="tiny-btn" hidden>Copy action plan</button>
+            <button id="sharedAuditDismissBtn" type="button" class="tiny-btn">Dismiss</button>
+          </div>
+        </div>
+        <p class="muted shared-audit-privacy">
+          This entire verdict was decoded from the URL fragment on your device — no server ever received it,
+          and no screenshot travels with the link. Remediation progress is saved only in this browser.
+        </p>
+        <div id="sharedAuditBody" class="shared-audit-body"></div>
+        <p id="sharedAuditError" class="shared-audit-error" role="alert" hidden></p>
+      </section>
+
+      <section class="card flow-card workflow-card" aria-labelledby="quick-flow-title">
+        <div class="mission-heading">
+          <div>
+            <p class="section-kicker">Demo mission control</p>
+            <h2 id="quick-flow-title">Go from screenshot to judge-ready audit in 90 seconds.</h2>
+            <p class="muted mission-lede">
+              One guided run loads a polished sample, ranks twelve vision simulations, checks WCAG
+              contrast, and unlocks a complete handoff package.
+            </p>
+          </div>
+          <div class="mission-primary-actions">
+            <button id="quickDemoBtn" type="button" class="primary-action">Run the guided demo</button>
+            <span class="privacy-proof"><span aria-hidden="true">●</span> 100% local processing</span>
+          </div>
+        </div>
+        <ol class="quick-start-timeline" aria-label="Suggested timed judge workflow">
+          <li id="timelineStepLoad" class="quick-start-timeline-item is-pending" data-workflow-step="load">
+            <span class="timeline-time">0:00-0:10</span>
+            <span><strong>Load:</strong> upload, paste, URL import, or use a built-in demo.</span>
+          </li>
+          <li id="timelineStepRender" class="quick-start-timeline-item is-pending" data-workflow-step="render">
+            <span class="timeline-time">0:10-0:30</span>
+            <span><strong>Render:</strong> click <strong>Render simulations</strong>, review ranked impact,
+            then open <strong>highest-impact simulation</strong>.</span>
+          </li>
+          <li id="timelineStepContrast" class="quick-start-timeline-item is-pending" data-workflow-step="contrast">
+            <span class="timeline-time">0:30-1:10</span>
+            <span><strong>Judge:</strong> run <strong>Check contrast</strong>, generate
+            <strong>suggestions</strong>, and re-check with the new pair.</span>
+          </li>
+          <li id="timelineStepExport" class="quick-start-timeline-item is-pending" data-workflow-step="export">
+            <span class="timeline-time">1:10-1:30</span>
+            <span><strong>Export:</strong> export <strong>submission package</strong> and copy one
+            handoff artifact for immediate review.</span>
+          </li>
+        </ol>
+        <div class="mission-status-grid">
+          <div class="quick-flow-status mission-readiness" aria-live="polite">
+          <h3 class="quick-flow-status-title">Live readiness</h3>
+          <ol id="workflowChecklist" class="onboarding-checklist" aria-label="Workflow progress">
+            <li id="workflowStepSource" class="flow-step is-pending">
+              <span class="flow-step-indicator" aria-hidden="true">◯</span>
+              <span>Source loaded from upload, URL, demo, or paste.</span>
+            </li>
+            <li id="workflowStepRender" class="flow-step is-pending">
+              <span class="flow-step-indicator" aria-hidden="true">◯</span>
+              <span>All accessibility simulations rendered.</span>
+            </li>
+            <li id="workflowStepContrast" class="flow-step is-pending">
+              <span class="flow-step-indicator" aria-hidden="true">◯</span>
+              <span>Contrast check has been run.</span>
+            </li>
+            <li id="workflowStepSubmission" class="flow-step is-pending">
+              <span class="flow-step-indicator" aria-hidden="true">◯</span>
+              <span>Submission packet is ready to export.</span>
+            </li>
+          </ol>
+          <p id="submissionReadinessText" class="muted">
+            Start by loading a source image, then render all simulations and run contrast to unlock judge-ready artifacts.
+          </p>
+          <div class="submission-readiness-progress" aria-label="Judge readiness score" aria-live="polite">
+            <p id="submissionReadinessScore" class="submission-readiness-score muted">Judge readiness: 0%</p>
+            <div class="submission-readiness-track" role="presentation">
+              <div id="submissionReadinessMeterFill" class="submission-readiness-fill readiness-low"></div>
+            </div>
+          </div>
+          </div>
+          <div class="quick-flow-status judge-timer-status" aria-live="polite">
+          <h3 class="quick-flow-status-title">90-second timer</h3>
+          <div class="judge-timer-controls">
+            <button id="startJudgeTimerBtn" type="button" class="tiny-btn">Start timer</button>
+            <button id="resetJudgeTimerBtn" type="button" class="tiny-btn">Reset timer</button>
+          </div>
+          <p id="judgeTimerText" class="muted">Start the timer to begin a live 90-second judge walkthrough.</p>
+          <div
+            id="judgeTimerProgressBar"
+            class="judge-timer-progress-bar"
+            role="progressbar"
+            aria-label="Judge timer"
+            aria-valuemin="0"
+            aria-valuemax="90"
+            aria-valuenow="0"
+          >
+            <div id="judgeTimerProgressFill" class="judge-timer-progress-fill"></div>
+          </div>
+          <p class="mission-tip"><kbd>Q</kbd> runs the demo · <kbd>?</kbd> shows every shortcut</p>
+          </div>
+        </div>
+        <section id="findingsCommandCenter" class="findings-command-center" aria-labelledby="findings-command-title" aria-live="polite">
+          <div class="findings-command-heading">
+            <div>
+              <p class="section-kicker">Live audit verdict</p>
+              <h3 id="findings-command-title">Your highest-priority findings will appear here.</h3>
+            </div>
+            <span id="findingsVerdictBadge" class="findings-verdict-badge is-waiting">Awaiting audit</span>
+          </div>
+          <p id="findingsCommandSummary" class="muted">Run the guided demo or render your screenshot to turn twelve simulations and three contrast lenses into one clear decision.</p>
+          <div id="clearsightScoreCard" class="clearsight-score" hidden>
+            <div id="clearsightScoreRing" class="score-ring" role="img" aria-label="ClearSight accessibility score">
+              <div class="score-ring-inner">
+                <strong id="clearsightScoreValue">—</strong>
+                <span class="score-outof">/100</span>
+              </div>
+            </div>
+            <div class="score-meta">
+              <p class="score-kicker">ClearSight Score</p>
+              <p id="clearsightScoreVerdict" class="score-verdict">—</p>
+              <p id="clearsightScoreAxes" class="score-axes">Weighted across text contrast, color-vision safety, APCA, color independence, component contrast, and tap-target size.</p>
+              <p id="clearsightScoreProof" class="score-proof" role="status" aria-live="polite" hidden></p>
+            </div>
+            <figure id="riskFingerprint" class="risk-fingerprint">
+              <svg
+                id="riskFingerprintChart"
+                viewBox="0 0 320 270"
+                role="img"
+                aria-labelledby="risk-fingerprint-title risk-fingerprint-desc"
+              >
+                <title id="risk-fingerprint-title">Six-axis accessibility risk fingerprint</title>
+                <desc id="risk-fingerprint-desc">Run an audit to compare all six accessibility scores.</desc>
+                <g class="risk-fingerprint-grid" aria-hidden="true">
+                  <polygon points="160,112 182.5,125 182.5,151 160,164 137.5,151 137.5,125"></polygon>
+                  <polygon points="160,86 205,112 205,164 160,190 115,164 115,112"></polygon>
+                  <polygon points="160,60 227.5,99 227.5,177 160,216 92.5,177 92.5,99"></polygon>
+                  <polygon points="160,34 250,86 250,190 160,242 70,190 70,86"></polygon>
+                  <line x1="160" y1="138" x2="160" y2="34"></line>
+                  <line x1="160" y1="138" x2="250" y2="86"></line>
+                  <line x1="160" y1="138" x2="250" y2="190"></line>
+                  <line x1="160" y1="138" x2="160" y2="242"></line>
+                  <line x1="160" y1="138" x2="70" y2="190"></line>
+                  <line x1="160" y1="138" x2="70" y2="86"></line>
+                </g>
+                <polygon id="riskFingerprintShape" class="risk-fingerprint-shape" points="160,138 160,138 160,138 160,138 160,138 160,138"></polygon>
+                <g id="riskFingerprintPoints" class="risk-fingerprint-points" aria-hidden="true"></g>
+                <g class="risk-fingerprint-labels" aria-hidden="true">
+                  <text x="160" y="18">Text</text>
+                  <text x="272" y="81">CVD</text>
+                  <text x="274" y="205">APCA</text>
+                  <text x="160" y="264">Color cues</text>
+                  <text x="46" y="205">Components</text>
+                  <text x="48" y="81">Targets</text>
+                </g>
+              </svg>
+              <figcaption>Accessibility fingerprint <span>Higher is stronger</span></figcaption>
+            </figure>
+          </div>
+          <div class="findings-metric-grid" aria-label="Live audit metrics">
+            <div class="findings-metric"><strong id="findingTextIssueCount">—</strong><span>Below AA</span></div>
+            <div class="findings-metric"><strong id="findingCvdIssueCount">—</strong><span>Hidden CVD risks</span></div>
+            <div class="findings-metric"><strong id="findingApcaIssueCount">—</strong><span>APCA risks</span></div>
+            <div class="findings-metric"><strong id="findingCollisionCount">—</strong><span>Color-only collisions</span></div>
+            <div class="findings-metric"><strong id="findingComponentIssueCount">—</strong><span>Invisible surfaces</span></div>
+            <div class="findings-metric"><strong id="findingTargetIssueCount">—</strong><span>Small tap targets</span></div>
+            <div class="findings-metric"><strong id="findingTopImpactValue">—</strong><span>Peak visual shift</span></div>
+          </div>
+          <div class="findings-command-action">
+            <div>
+              <span class="findings-action-label">Recommended next action</span>
+              <strong id="findingsNextAction">Load a source image to begin.</strong>
+            </div>
+            <button id="findingsActionBtn" type="button" class="primary-action" disabled>Start guided audit</button>
+          </div>
+        </section>
+        <details class="judge-reference">
+          <summary>What the guided demo unlocks</summary>
+          <div class="judge-reference-grid">
+            <div>
+              <h3>Phase unlocks</h3>
+              <ul class="demo-list">
+                <li><strong>Load:</strong> source preview and local image metadata.</li>
+                <li><strong>Render:</strong> ranked simulations, hotspots, and top-impact inspection.</li>
+                <li><strong>Contrast:</strong> WCAG status, fixes, reports, and judge snapshot.</li>
+                <li><strong>Export:</strong> one ZIP with images, summary, manifest, JSON, and CSV.</li>
+              </ul>
+            </div>
+            <div>
+              <h3>Fast recovery</h3>
+              <p class="muted">If an upload stalls, choose a built-in demo. If time runs short, press <kbd>G</kbd> as soon as readiness reaches 100% to download and copy the handoff in one action.</p>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section class="card controls controls-card" aria-labelledby="source-title">
         <h2 id="source-title">1) Source image</h2>
         <p id="message" class="message" role="status" aria-live="polite"></p>
         <label id="imageDropzone" class="dropzone" for="imageInput">
           <input id="imageInput" type="file" accept="image/*" />
           <span>Upload screenshot/image</span>
-          <p class="dropzone-hint">Tip: drag &amp; drop an image here or paste from clipboard.</p>
+          <p class="dropzone-hint">
+            Supported: PNG, JPG/JPEG, GIF, WEBP, BMP, AVIF, SVG • up to 10 MB and 5000 px max. Drag &amp; drop or paste images.
+          </p>
         </label>
         <div class="button-row">
+          <button id="captureScreenBtn" type="button">Capture a live app</button>
           <button id="demoUi" type="button">Load demo UI</button>
           <button id="demoDashboard" type="button">Load demo dashboard</button>
           <button id="processBtn" type="button">Render simulations</button>
           <button id="downloadSourceBtn" type="button">Download source preview</button>
           <button id="clearWorkspaceBtn" type="button">Clear workspace</button>
         </div>
+        <p class="muted live-capture-hint">
+          No screenshot handy? <strong>Capture a live app</strong> shares any window, browser tab, or
+          full screen for a single frame — sharing stops immediately after the grab, the frame runs
+          through the full six-axis audit, and nothing ever leaves your device.
+        </p>
+        <div class="source-url-row">
+          <label for="imageUrlInput">Load image from URL</label>
+          <div class="source-url-controls">
+            <input
+              id="imageUrlInput"
+              class="source-url-input"
+              type="url"
+              autocomplete="off"
+              placeholder="https://example.com/accessible-screenshot.png"
+              aria-label="Image URL"
+            />
+            <button id="loadImageUrlBtn" type="button">Load URL</button>
+          </div>
+          <p class="muted image-url-hint">
+            URL-loading requires publicly accessible images with browser-readable image responses (CORS-friendly).
+          </p>
+        </div>
         <details id="shortcutHelp" class="shortcut-help">
           <summary>Keyboard shortcuts</summary>
           <div class="shortcut-help-content">
             <p>Use these for fast demos and keyboard-first workflows:</p>
+            <div class="shortcut-help-search-wrap">
+              <label class="shortcut-help-search-label" for="shortcutHelpSearchInput">Filter shortcuts</label>
+              <input
+                id="shortcutHelpSearchInput"
+                class="shortcut-help-search"
+                type="search"
+                placeholder="Try R, Quick judge, contrast..."
+                autocomplete="off"
+              />
+            </div>
+            <p id="shortcutHelpNoResults" class="shortcut-help-no-results" hidden>No matching shortcuts.</p>
             <ul class="shortcut-help-list">
               <li><kbd>R</kbd> Render simulations</li>
+              <li><kbd>Q</kbd> Run quick judge workflow</li>
               <li><kbd>U</kbd> Load demo UI</li>
               <li><kbd>D</kbd> Load demo dashboard</li>
               <li><kbd>P</kbd> Inspect highest-impact simulation</li>
               <li><kbd>C</kbd> Run contrast check</li>
+              <li><kbd>L</kbd> Play/pause preview slideshow (modal)</li>
+              <li><kbd>V</kbd> Copy latest contrast result</li>
+              <li><kbd>W</kbd> Swap text and background contrast colors</li>
+              <li><kbd>O</kbd> Undo last contrast change</li>
+              <li><kbd>K</kbd> Copy current contrast pair as CSS</li>
+              <li><kbd>I</kbd> Download contrast snapshot</li>
+              <li><kbd>F</kbd> Auto-fix contrast to AA target</li>
               <li><kbd>A</kbd> Generate suggestions</li>
               <li><kbd>S</kbd> Copy judge snapshot</li>
               <li><kbd>T</kbd> Pick text color</li>
               <li><kbd>B</kbd> Pick background color</li>
               <li><kbd>?</kbd> or <kbd>H</kbd> Toggle this help</li>
-              <li><kbd>Esc</kbd> Cancel color picker / close open modal / close help</li>
+              <li><kbd>Home</kbd>/<kbd>End</kbd> First/last simulation (card or modal)</li>
+              <li><kbd>←</kbd>/<kbd>→</kbd> Step through modal simulations</li>
+              <li><kbd>←</kbd>/<kbd>↑</kbd>/<kbd>↓</kbd>/<kbd>→</kbd> Navigate focused simulation cards</li>
+              <li><kbd>Esc</kbd> Cancel color picker / exit contrast X-ray / close open modal / close help</li>
               <li><kbd>J</kbd> Download judge summary</li>
+              <li><kbd>M</kbd> Copy submission manifest</li>
+              <li><kbd>X</kbd> Copy accessibility report JSON</li>
+              <li><kbd>Y</kbd> Copy accessibility report CSV</li>
+              <li><kbd>Z</kbd> Download submission package</li>
+              <li><kbd>N</kbd> Copy handoff packet JSON</li>
+              <li><kbd>G</kbd> Finalize judge handoff (download submission package + handoff packet)</li>
+              <li><kbd>E</kbd> Copy judge workflow snapshot</li>
             </ul>
           </div>
         </details>
@@ -62,24 +383,252 @@
         <p id="exportNote" class="muted"></p>
       </section>
 
-      <section class="card" aria-labelledby="source-preview-title">
-        <h2 id="source-preview-title">2) Source preview</h2>
-        <figure class="canvas-wrap">
-          <canvas id="sourceCanvas" class="source-canvas" width="680" height="382" aria-label="Source image preview"></canvas>
-          <figcaption id="sourceInfo" class="muted">No image loaded</figcaption>
-        </figure>
+      <section class="card batch-audit-card" aria-labelledby="batch-audit-title">
+        <h2 id="batch-audit-title">1b) Batch audit — score every screen at once</h2>
+        <p class="muted batch-audit-intro">
+          Auditing a whole app? Drop several screenshots and ClearSight scores each one across all six
+          analysis axes — WCAG 2 text contrast, hidden color-vision failures, APCA perceptual contrast,
+          and WCAG 1.4.1 color-only collisions — then ranks the riskiest screens first. No screenshots
+          handy? <strong>Record an app walkthrough</strong> instead: share a window and click through
+          your product — ClearSight keeps one frame per distinct screen you visit (up to 12, skipping
+          repeats and mid-navigation frames), scores them all, <strong>and simultaneously scans the
+          motion between screens for WCAG 2.3.1 flashing</strong>. One recording produces both the
+          portfolio debt map and a seizure-safety verdict. Everything runs locally; nothing is uploaded.
+        </p>
+        <p class="muted batch-audit-ci-note">
+          Shipping continuously? The identical six-axis audit also runs headlessly in CI:
+          <code>npm run audit -- screens/*.png --min-grade B</code> scores PNG screenshots in pure Node;
+          add <code>--baseline main-audit.json</code> to fail only when a route regresses, and
+          <code>--sarif</code> to publish findings as GitHub code-scanning annotations, or
+          <code>--markdown</code> / <code>--badge</code> for a PR comment and score badge — no browser,
+          zero dependencies.
+        </p>
+        <div class="button-row">
+          <input id="batchAuditInput" type="file" accept="image/*" multiple class="visually-hidden-input" aria-label="Choose screenshots for batch audit" />
+          <input id="batchBaselineInput" type="file" accept="application/json,.json" class="visually-hidden-input" aria-label="Choose a ClearSight CI baseline JSON report" />
+          <button id="batchAuditFilesBtn" type="button">Audit screenshots…</button>
+          <button id="recordWalkthroughBtn" type="button" title="Capture distinct screens and scan live motion for WCAG 2.3.1 flashing in one local recording">Record + motion-audit walkthrough</button>
+          <button id="batchAuditSampleBtn" type="button">Score built-in sample set</button>
+          <button id="batchBaselineBtn" type="button">Compare CI baseline…</button>
+          <button id="batchAuditCsvBtn" type="button" disabled>Download batch CSV</button>
+          <button id="batchAuditPdfBtn" type="button" disabled>Download portfolio PDF</button>
+        </div>
+        <p id="batchAuditStatus" class="muted" role="status" aria-live="polite">
+          No batch yet — pick up to 12 screenshots, score the two built-in demo screens instantly, or record a walkthrough of your live app.
+        </p>
+        <p id="batchAuditSummary" class="batch-audit-summary" hidden></p>
+        <div id="batchRegressionSummary" class="batch-regression-summary" role="status" aria-live="polite" hidden></div>
+        <div id="batchAuditPortfolio" class="batch-audit-portfolio" aria-live="polite" hidden></div>
+        <ol id="batchAuditList" class="batch-audit-list" aria-label="Batch audit results, riskiest screens first"></ol>
       </section>
 
-      <section class="card" aria-labelledby="sim-title">
-        <h2 id="sim-title">3) Accessibility simulations</h2>
+      <details class="card advanced-audit-card flash-scan-card">
+        <summary>
+          <span class="advanced-audit-step">1c · Specialist lab</span>
+          <span id="flash-scan-title" class="advanced-audit-title">Animation &amp; video flash safety</span>
+          <span class="advanced-audit-summary">Scan GIFs, videos, and motion for WCAG 2.3.1 seizure risk.</span>
+        </summary>
+        <div class="advanced-audit-body">
+        <p class="muted flash-scan-intro">
+          Moving UI can be dangerous in a way no static audit sees: content that flashes more than
+          <strong>three times per second</strong> across a large area can trigger photosensitive
+          seizures (<strong>WCAG 2.3.1 Three Flashes or Below Threshold</strong>). Load an animated
+          GIF, APNG, or WebP — or a real <strong>MP4/WebM/MOV video</strong> such as a screen
+          recording, product demo, or hero banner (sampled at 10&nbsp;fps, first 24&nbsp;s) — and
+          ClearSight measures both general-luminance and saturated-red flash rates per screen region
+          plus the area flashing simultaneously, entirely on-device. The 8×8 scan follows WCAG's
+          independent luminance and CIE 1976 UCS chromaticity thresholds.
+        </p>
         <div class="button-row">
+          <input id="flashScanInput" type="file" accept=".gif,.apng,.png,.webp,.mp4,.m4v,.webm,.mov,image/gif,image/apng,image/png,image/webp,video/mp4,video/webm,video/quicktime" class="visually-hidden-input" aria-label="Choose an animated image or video for flash scanning" />
+          <button id="flashScanFileBtn" type="button">Scan animation or video…</button>
+          <button id="flashScanDemoBtn" type="button" title="Analyze a red/green promo animation that evades the general luminance check but fails WCAG's saturated-red threshold">Run red-flash trap demo</button>
+        </div>
+        <p id="flashScanStatus" class="muted" role="status" aria-live="polite">
+          No animation or video scanned yet. Danger zone: more than 3 flashes per second covering 25% or more of the frame.
+        </p>
+        <div id="flashScanResult" class="flash-scan-result" hidden>
+          <p id="flashScanVerdict" class="flash-scan-verdict" data-risk="low" role="status" aria-live="polite"></p>
+          <dl id="flashScanStats" class="flash-scan-stats"></dl>
+          <figure class="canvas-wrap flash-scan-timeline-wrap">
+            <canvas id="flashScanTimeline" width="640" height="110" aria-label="Mean frame luminance over time"></canvas>
+            <figcaption class="muted">Mean frame luminance over time — rapid tall swings are flash candidates.</figcaption>
+          </figure>
+          <p id="flashScanGuidance" class="muted"></p>
+        </div>
+        </div>
+      </details>
+
+      <details class="card advanced-audit-card focus-check-card">
+        <summary>
+          <span class="advanced-audit-step">1d · Specialist lab</span>
+          <span id="focus-check-title" class="advanced-audit-title">Keyboard focus evidence</span>
+          <span class="advanced-audit-summary">Compare focus states or map a tab journey for WCAG 2.4.7 / 2.4.13.</span>
+        </summary>
+        <div class="advanced-audit-body">
+        <p class="muted focus-check-intro">
+          A focus indicator only exists while focus is present, so no single screenshot can prove
+          WCAG 2.4.7 Focus Visible — it normally sits in the "requires manual testing" list. Two
+          screenshots change that: capture the same view <strong>without and with keyboard
+          focus</strong> and ClearSight diffs them pixel-by-pixel — the change <em>is</em> the
+          indicator. It is then measured against the WCAG 2.4.13 Focus Appearance bar: a
+          contrasting area at least as large as a 1&nbsp;px perimeter of the component, at a
+          &ge;3:1 contrast between the focused and unfocused states. Both frames stay on-device,
+          and a measured pair moves 2.4.7 out of the conformance summary's manual-testing list.
+        </p>
+        <div class="button-row">
+          <input id="focusBaseInput" type="file" accept="image/*" class="visually-hidden-input" aria-label="Choose the unfocused frame" />
+          <input id="focusFocusInput" type="file" accept="image/*" class="visually-hidden-input" aria-label="Choose the focused frame" />
+          <button id="focusBaseBtn" type="button" title="Screenshot of the view before the control receives keyboard focus">1. Load unfocused frame…</button>
+          <button id="focusFocusBtn" type="button" title="The same view after pressing Tab — identical size, focus indicator showing">2. Load focused frame…</button>
+          <button id="focusDemoWeakBtn" type="button" title="Diff the built-in UI sample against a copy with a faint 2px ring — detected, but below the 3:1 change-contrast bar">Demo: faint ring (fails)</button>
+          <button id="focusDemoStrongBtn" type="button" title="Diff the built-in UI sample against a copy with a bold 6px blue ring that meets the 2.4.13 area and contrast minimums">Demo: strong ring (passes)</button>
+        </div>
+        <p id="focusCheckStatus" class="muted" role="status" aria-live="polite">
+          No focus pair analyzed yet. Load the same view unfocused and focused (or run a demo) to measure the focus indicator.
+        </p>
+        <div id="focusCheckResult" class="focus-check-result" hidden>
+          <p id="focusCheckVerdict" class="focus-check-verdict" data-verdict="none" role="status" aria-live="polite"></p>
+          <dl id="focusCheckStats" class="flash-scan-stats"></dl>
+          <figure class="canvas-wrap focus-check-overlay-wrap">
+            <canvas id="focusCheckOverlay" aria-label="Focused frame with the detected focus indicator highlighted"></canvas>
+            <figcaption class="muted">
+              Focused frame, dimmed — pale magenta marks every changed pixel; solid magenta marks
+              pixels that reach the 3:1 change contrast WCAG 2.4.13 requires.
+            </figcaption>
+          </figure>
+          <p id="focusCheckGuidance" class="muted"></p>
+        </div>
+
+        <div class="focus-sequence-block">
+          <h3>Focus order map — grade the whole tab journey</h3>
+          <p class="muted">
+            Two frames prove one focus state; a short screen recording proves the whole keyboard
+            journey. Start the clip on the unfocused view, press <kbd>Tab</kbd> through the controls
+            without scrolling, and load it here: ClearSight diffs every sampled frame against the
+            unfocused baseline, skips duplicates and revisits, and numbers each distinct focus stop
+            with its own WCAG 2.4.13 verdict. The recording never leaves this device.
+          </p>
+          <div class="focus-check-actions">
+            <input
+              id="focusSequenceVideoInput"
+              type="file"
+              accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v"
+              class="visually-hidden-input"
+              aria-label="Choose a tab-through screen recording"
+            />
+            <button
+              id="focusSequenceVideoBtn"
+              type="button"
+              title="MP4, WebM, or MOV screen recording that starts on the unfocused view and keeps the view still while tabbing"
+            >
+              Load tab-through video…
+            </button>
+            <button
+              id="focusSequenceDemoBtn"
+              type="button"
+              title="Synthesizes a 7-frame tab-through of the built-in UI sample: two bold stops that pass and one faint ring that fails, plus duplicate, idle, and revisit frames"
+            >
+              Demo: map a tab-through
+            </button>
+            <button
+              id="downloadFocusSequenceBtn"
+              type="button"
+              disabled
+              title="Download the numbered tab path and per-stop WCAG 2.4.13 verdicts as a PNG"
+            >
+              Download focus map PNG
+            </button>
+          </div>
+          <p id="focusSequenceStatus" class="muted" role="status" aria-live="polite">
+            No tab-through recording analyzed yet. Start the clip on the unfocused view, press Tab
+            through the controls without scrolling, then load it — or run the built-in demo.
+          </p>
+          <div id="focusSequenceResult" class="focus-check-result" hidden>
+            <p id="focusSequenceVerdict" class="focus-check-verdict" data-verdict="none" role="status" aria-live="polite"></p>
+            <dl id="focusSequenceStats" class="flash-scan-stats"></dl>
+            <figure class="canvas-wrap focus-check-overlay-wrap">
+              <canvas
+                id="focusSequenceOverlay"
+                aria-label="Unfocused baseline with numbered focus stops and the recorded tab path overlaid"
+              ></canvas>
+              <figcaption class="muted">
+                Unfocused baseline, dimmed — numbered badges mark each mapped focus stop in tab
+                order (green meets WCAG 2.4.13, amber falls below), joined by the recorded path.
+                Download this evidence directly or find it automatically in the submission package.
+              </figcaption>
+            </figure>
+            <ol id="focusSequenceStops" class="focus-sequence-stops"></ol>
+            <p id="focusSequenceGuidance" class="muted"></p>
+          </div>
+        </div>
+        </div>
+      </details>
+
+      <section class="card source-preview-card" aria-labelledby="source-preview-title">
+        <h2 id="source-preview-title">2) Source preview</h2>
+        <div class="button-row xray-row">
+          <button
+            id="xrayToggleBtn"
+            type="button"
+            aria-pressed="false"
+            disabled
+            title="Hover anywhere on the source preview for a live magnified probe: estimated text/background pair, WCAG ratio, worst color-vision projection, and APCA Lc — click to send the pair to the checker"
+          >
+            Contrast X-ray
+          </button>
+          <span class="muted xray-hint">
+            Hover the preview to probe any spot under all three contrast lenses (WCAG 2 · CVD · APCA);
+            click sends the sampled pair to the checker. Keyboard: focus the preview, move the probe with
+            the arrow keys (<kbd>Shift</kbd> for 1px), apply with <kbd>Enter</kbd>, exit with <kbd>Esc</kbd>.
+          </span>
+        </div>
+        <figure class="canvas-wrap">
+          <div class="source-canvas-shell">
+            <canvas id="sourceCanvas" class="source-canvas" width="680" height="382" aria-label="Source image preview"></canvas>
+            <div id="xrayLoupe" class="xray-loupe" hidden aria-hidden="true">
+              <canvas id="xrayLoupeCanvas" width="132" height="132"></canvas>
+              <div id="xrayReadout" class="xray-readout"></div>
+            </div>
+          </div>
+          <figcaption id="sourceInfo" class="muted">No image loaded</figcaption>
+          <p id="riskBadge" class="risk-badge risk-neutral" role="status" aria-live="polite">Accessibility risk: Not available</p>
+        </figure>
+        <p id="xraySrStatus" class="sr-only" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="card sim-grid-card" aria-labelledby="sim-title">
+        <h2 id="sim-title">3) Accessibility simulations</h2>
+        <p class="muted">Review the ranked simulations, inspect hotspots, then take the complete evidence package into a handoff or judging room.</p>
+        <div class="evidence-dock" aria-label="Recommended audit exports">
+          <div class="evidence-dock-copy">
+            <span class="section-kicker">Evidence dock</span>
+            <strong>Ship the proof, not a folder of loose screenshots.</strong>
+            <span>The submission package includes the report, scorecard, conformance summary, CSS fixes, and visual evidence.</span>
+          </div>
+          <div class="button-row evidence-dock-actions">
+            <button id="downloadPackageBtn" type="button" class="primary-action">Download submission package</button>
+            <button id="downloadVerdictCardBtn" type="button" title="Export a presentation-ready 1200×630 PNG with the score, six-axis fingerprint, measured findings, and audited screenshot">Audit verdict card</button>
+            <button id="downloadAuditPdfBtn" type="button" title="One-page-style PDF with the ClearSight Score, all six analysis axes, findings tables, and the prioritized remediation plan — generated entirely in the browser, no libraries, no upload">PDF report</button>
+            <button id="downloadRepairProofBtn" type="button" disabled title="Available after a screenshot repair is re-audited: export exact before/after pixels, score delta, grade change, and measured finding reductions">Repair proof card</button>
+          </div>
+        </div>
+        <details class="secondary-exports">
+          <summary>More export formats <span>previews, data, video, and compliance</span></summary>
+          <div class="button-row secondary-export-actions">
           <button id="downloadAllBtn" type="button">Download all previews</button>
+          <button id="downloadChecklistShotsBtn" type="button">Download checklist screenshots</button>
           <button id="downloadContactBtn" type="button">Download contact sheet</button>
           <button id="downloadTopImpactBtn" type="button">Download top-impact pack</button>
+          <button id="downloadReelBtn" type="button" title="Record a short video cycling the original view and every rendered simulation, ranked by impact">Export vision reel (video)</button>
           <button id="downloadReportBtn" type="button">Download accessibility report</button>
           <button id="downloadReportCsvBtn" type="button">Download accessibility report CSV</button>
+          <button id="downloadReviewerPacketBtn" type="button">Download reviewer packet</button>
           <button id="downloadSummaryBtn" type="button">Download judge summary</button>
-          <button id="downloadPackageBtn" type="button">Download submission package</button>
+          <button id="downloadConformanceBtn" type="button" title="VPAT-style WCAG conformance summary: every machine-checkable criterion (1.4.1, 1.4.3, 1.4.6, 1.4.11, 2.3.1, 2.5.8) mapped to Supports / Does Not Support with measured evidence, plus advisory CVD/APCA lenses and an honest manual-testing scope">Download conformance summary</button>
+          </div>
+        </details>
+        <div class="button-row simulation-view-actions" aria-label="Simulation view controls">
           <button id="topImpactFilterBtn" type="button" aria-pressed="false">Show top-impact simulations only</button>
           <button id="openTopImpactBtn" type="button" aria-label="Inspect highest-impact simulation" disabled>Inspect highest-impact simulation</button>
         </div>
@@ -114,23 +663,212 @@
         <div id="simGrid" class="sim-grid" aria-live="polite"></div>
       </section>
 
-      <section class="card" aria-labelledby="contrast-title">
+      <section class="card contrast-card" aria-labelledby="contrast-title">
         <h2 id="contrast-title">4) WCAG contrast checker</h2>
+        <div class="text-scan" role="group" aria-labelledby="text-scan-title">
+          <h3 id="text-scan-title">Automatic text contrast scan</h3>
+          <p class="muted">
+            ClearSight locates text-like regions in your screenshot and estimates each region's
+            WCAG contrast automatically — no manual color picking. Each finding is also projected
+            through all seven color-vision deficiency modes to expose hidden failures that pass
+            standard WCAG math but collapse for color-blind users. Load any flagged region into
+            the checker with one click.
+          </p>
+          <p id="textScanStatus" class="muted palette-status" role="status" aria-live="polite">
+            Render simulations to scan text regions automatically.
+          </p>
+          <div id="textScanResult" hidden>
+            <div class="button-row text-scan-actions">
+              <button id="reviewWorstTextBtn" type="button" class="primary">Review worst finding</button>
+              <button id="repairAllTextBtn" type="button" class="repair-all-btn">Fix all detected failures</button>
+              <button id="downloadTextScanBtn" type="button">Download annotated scan</button>
+              <span class="muted">Click a numbered region on the screenshot to inspect its sampled colors.</span>
+            </div>
+            <figure class="canvas-wrap text-scan-figure">
+              <canvas id="textScanCanvas" tabindex="0" aria-label="Interactive source screenshot with detected text regions outlined. Click a numbered region to inspect its contrast."></canvas>
+              <figcaption class="muted text-scan-legend">
+                Outlines:
+                <span class="text-scan-key text-scan-key--fail">fails WCAG</span> ·
+                <span class="text-scan-key text-scan-key--large">large text only</span> ·
+                <span class="text-scan-key text-scan-key--pass">passes AA</span>
+              </figcaption>
+            </figure>
+            <section id="textScanLens" class="text-scan-lens" aria-labelledby="text-scan-lens-title" hidden>
+              <div class="text-scan-lens-copy">
+                <p class="eyebrow">Focused evidence</p>
+                <h4 id="text-scan-lens-title">Issue lens</h4>
+                <p id="textScanLensDetail" class="muted"></p>
+                <div id="textScanLensPair" class="text-scan-lens-pair" aria-label="Sampled foreground and background colors"></div>
+                <div class="text-scan-lens-actions">
+                  <button id="textScanLensFixBtn" type="button">Inspect fixes</button>
+                  <button id="textScanLensRepairBtn" type="button" class="primary">Repair region &amp; verify</button>
+                </div>
+                <p id="textScanRepairProof" class="text-scan-repair-proof" role="status" aria-live="polite" hidden></p>
+              </div>
+              <figure class="text-scan-lens-preview">
+                <canvas id="textScanLensCanvas" aria-label="Magnified crop of the selected text contrast finding"></canvas>
+                <figcaption>Magnified source crop · outline marks the detected region</figcaption>
+              </figure>
+            </section>
+            <ul id="textScanList" class="palette-pair-list" aria-label="Detected text regions (worst contrast first)"></ul>
+          </div>
+          <div class="component-scan" role="group" aria-labelledby="component-scan-title">
+            <h4 id="component-scan-title">UI component contrast (WCAG 1.4.11)</h4>
+            <p class="muted">
+              Text contrast is not the whole story: a button or input whose surface nearly matches
+              the page has no visible boundary, even when its label passes AA. ClearSight marches
+              outward from each detected region to find the adjacent color and flags component
+              surfaces below the 3:1 non-text contrast minimum. Each finding offers a one-click
+              repair that keeps the text readable (WCAG + APCA), avoids new color-blind palette
+              collisions, and verifies itself with a full re-audit.
+            </p>
+            <p id="componentScanStatus" class="muted palette-status" role="status" aria-live="polite">
+              Runs automatically with the text scan — no component surfaces resolved yet.
+            </p>
+            <div class="button-row complete-repair-actions">
+              <button id="repairAllAuditBtn" type="button" class="primary complete-repair-btn">
+                Fix every detected accessibility failure
+              </button>
+              <button id="undoImageRepairBtn" type="button" disabled>Undo last screenshot repair</button>
+              <span class="muted">Repairs text and component surfaces locally, then reruns all six audit axes.</span>
+            </div>
+            <div class="button-row css-fix-actions">
+              <button id="copyCssFixesBtn" type="button" disabled>Copy fixes as CSS</button>
+              <button id="downloadCssFixesBtn" type="button" disabled>Download fix sheet (.css)</button>
+              <span class="muted">
+                Developer handoff: verified replacement colors plus source-ready WCAG 2.5.8
+                hit-area templates for undersized controls, localized by screenshot coordinates.
+              </span>
+            </div>
+            <p id="completeRepairProof" class="complete-repair-proof" role="status" aria-live="polite" hidden></p>
+            <div id="componentScanResult" hidden>
+              <ul id="componentScanList" class="collision-list" aria-label="Component surfaces below the 3:1 non-text contrast minimum (worst first)"></ul>
+            </div>
+            <p id="componentScanRepairProof" class="text-scan-repair-proof" role="status" aria-live="polite" hidden></p>
+          </div>
+          <div class="target-size-scan" role="group" aria-labelledby="target-size-title">
+            <h4 id="target-size-title">Tap target size (WCAG 2.5.8)</h4>
+            <p class="muted">
+              No color lens can see this failure: a row of crisp 16px icon buttons passes every
+              contrast check while staying nearly impossible to tap. ClearSight measures each
+              resolved control surface and compact icon block to pixel precision, converts sizes
+              to CSS pixels, and flags targets under the 24×24px minimum whose 24px clearance
+              circle collides with a neighboring target — while honestly honoring the WCAG
+              spacing exception when an undersized control has room around it.
+            </p>
+            <p id="targetSizeStatus" class="muted palette-status" role="status" aria-live="polite">
+              Runs automatically with the text scan — no tap targets measured yet.
+            </p>
+            <div id="targetSizeResult" hidden>
+              <ul id="targetSizeList" class="collision-list" aria-label="Tap targets below the 24 CSS pixel minimum (smallest first)"></ul>
+            </div>
+          </div>
+        </div>
+        <div class="palette-audit" role="group" aria-labelledby="palette-audit-title">
+          <h3 id="palette-audit-title">Auto palette audit</h3>
+          <p class="muted">
+            After rendering, ClearSight extracts your screenshot's dominant colors and flags every
+            color pairing that fails WCAG contrast. Load any pair into the checker with one click.
+          </p>
+          <p id="paletteStatus" class="muted palette-status" role="status" aria-live="polite">
+            Render simulations to audit the source palette automatically.
+          </p>
+          <div id="paletteSwatches" class="palette-swatch-row" role="list" aria-label="Dominant source colors"></div>
+          <ul id="palettePairs" class="palette-pair-list" aria-label="Palette contrast pairs (worst first)"></ul>
+          <div id="collisionPanel" class="collision-panel" role="group" aria-labelledby="collision-title" tabindex="-1">
+            <h4 id="collision-title">Color-only distinction risk (WCAG 1.4.1)</h4>
+            <p class="muted">
+              Contrast math checks text against its background — it never asks whether two colors
+              that <em>encode different meanings</em> (status dots, chart lines, buttons) stay
+              tellable-apart. ClearSight projects every distinct dominant-color pair through all
+              seven color-vision matrices and flags pairs that collapse into near-identical shades.
+            </p>
+            <p id="collisionStatus" class="muted palette-status" role="status" aria-live="polite">
+              Render simulations to scan dominant color pairs for color-vision collisions.
+            </p>
+            <ul id="collisionList" class="collision-list" aria-label="Color pairs that collapse under color-vision deficiency (worst first)"></ul>
+          </div>
+          <div id="remediationProof" class="remediation-proof" role="status" aria-live="polite" hidden></div>
+          <div id="paletteRecolor" class="palette-recolor" role="group" aria-labelledby="palette-recolor-title" hidden>
+            <h4 id="palette-recolor-title">Accessible recolor preview</h4>
+            <p class="muted">
+              ClearSight can repaint your screenshot with the closest replacement colors that fix
+              failing pairings — see the accessible version of your own UI before touching code.
+            </p>
+            <div class="palette-recolor-actions">
+              <button id="recolorPreviewBtn" type="button" class="tiny-btn">Preview accessible recolor</button>
+              <button id="recolorDownloadBtn" type="button" class="tiny-btn" hidden>Download recolored PNG</button>
+              <button id="recolorApplyBtn" type="button" class="tiny-btn primary" hidden>Use fix &amp; verify again</button>
+            </div>
+            <p id="recolorStatus" class="muted palette-status" role="status" aria-live="polite"></p>
+            <div id="recolorMap" class="recolor-map" role="list" aria-label="Palette color substitutions" hidden></div>
+            <div id="recolorCompare" class="recolor-compare" hidden>
+              <figure class="recolor-figure">
+                <div id="recolorWipeStage" class="recolor-wipe-stage" style="--recolor-reveal: 50%">
+                  <canvas id="recolorBeforeCanvas" aria-label="Original screenshot"></canvas>
+                  <canvas id="recolorAfterCanvas" aria-label="Screenshot repainted with accessible replacement colors"></canvas>
+                  <span class="recolor-wipe-label recolor-wipe-label--before" aria-hidden="true">Original</span>
+                  <span class="recolor-wipe-label recolor-wipe-label--after" aria-hidden="true">Accessible fix</span>
+                  <span class="recolor-wipe-divider" aria-hidden="true"></span>
+                </div>
+                <figcaption>
+                  <label for="recolorRevealRange">Drag to reveal the verified accessible fix</label>
+                  <input
+                    id="recolorRevealRange"
+                    class="recolor-reveal-range"
+                    type="range"
+                    min="0"
+                    max="100"
+                    value="50"
+                    aria-label="Accessible recolor reveal"
+                    aria-valuetext="50% accessible fix visible"
+                  />
+                </figcaption>
+              </figure>
+            </div>
+          </div>
+        </div>
+        <p class="muted">
+          Every checked pair is evaluated through three independent lenses: WCAG 2 ratio math
+          (AA/AAA/large-text), a seven-mode color-vision projection, and the APCA perceptual
+          contrast score from the WCAG 3 draft. A pair that passes today's ratio math but reads
+          poorly in practice — like light gray on black — is flagged as a perceptual false pass
+          instead of slipping through.
+        </p>
         <div class="contrast-form">
         <div class="color-control">
           <label for="contrastText">Text color</label>
           <div class="input-row">
             <input id="contrastText" type="color" value="#0F172A" />
-            <input id="contrastTextHex" type="text" value="#0F172A" maxlength="7" />
+            <input
+              id="contrastTextHex"
+              type="text"
+              value="#0F172A"
+              maxlength="32"
+              placeholder="#0f172a, rgb(), hsl(), or color names"
+              aria-label="Text color value"
+            />
           </div>
         </div>
         <div class="color-control">
           <label for="contrastBg">Background color</label>
           <div class="input-row">
             <input id="contrastBg" type="color" value="#FFFFFF" />
-            <input id="contrastBgHex" type="text" value="#FFFFFF" maxlength="7" />
+            <input
+              id="contrastBgHex"
+              type="text"
+              value="#FFFFFF"
+              maxlength="32"
+              placeholder="#ffffff, rgb(), hsl(), or color names"
+              aria-label="Background color value"
+            />
           </div>
         </div>
+        <p id="contrastColorHelp" class="muted">
+          Tip: type `#` hex, `rgb()/rgba()`, `hsl()/hsla()`, or CSS color names.
+          Every check also projects the pair through all seven color-vision deficiency modes,
+          so you catch pairs that pass WCAG for typical vision but fail for color-blind users.
+        </p>
         <div class="color-pick-actions" role="group" aria-label="Pick colors from source image">
           <button id="pickTextColorBtn" type="button" class="tiny-btn color-picker-btn" aria-pressed="false">
             Pick text color
@@ -147,6 +885,16 @@
         <p id="contrastValidation" class="field-error" role="status" aria-live="polite"></p>
         <div class="button-row">
           <button id="contrastBtn" type="button">Check contrast</button>
+          <button id="copyContrastBtn" type="button">Copy contrast result</button>
+          <button id="swapContrastBtn" type="button">Swap text/background</button>
+          <button id="undoContrastBtn" type="button" disabled>Undo last contrast change</button>
+          <button id="autoFixContrastBtn" type="button">Auto-fix to AA</button>
+          <button id="copyContrastCssBtn" type="button">Copy contrast CSS snippet</button>
+          <button id="downloadContrastSnapshotBtn" type="button">Download contrast snapshot</button>
+          <button id="downloadSuggestionsCsvBtn" type="button">Download suggestion list CSV</button>
+          <button id="downloadSuggestionsJsonBtn" type="button">Download suggestion list JSON</button>
+          <button id="copySuggestionsCsvBtn" type="button">Copy suggestion list CSV</button>
+          <button id="copySuggestionsJsonBtn" type="button">Copy suggestion list JSON</button>
           <button id="suggestBtn" type="button">Suggest accessible palette</button>
         </div>
         <div id="contrastOut" class="contrast-output" aria-live="polite"></div>
@@ -155,18 +903,41 @@
         <div id="suggestions" class="suggestions"></div>
       </section>
 
-      <section class="card" aria-labelledby="demo-help-title">
+      <section class="card demo-card" aria-labelledby="demo-help-title">
         <h2 id="demo-help-title">5) Demo script & screenshot checklist</h2>
-        <p class="muted">Use this panel for a quick 2-minute judge walkthrough or Devpost submission prep.</p>
+        <p class="muted">Use this panel for a quick 90-second judge walkthrough or Devpost submission prep. <strong>Copy shareable audit link</strong> packs the full verdict — score, findings, remediation plan — into a ~2&nbsp;KB URL fragment that opens as a read-only report on any device, with no server and no upload.</p>
         <div class="button-row">
           <a class="link-btn" href="./VIDEO_SCRIPT.md" target="_blank" rel="noopener noreferrer">Open full demo script</a>
           <a class="link-btn" href="./SUBMISSION_SCREENSHOTS.md" target="_blank" rel="noopener noreferrer">Open screenshot checklist</a>
           <button id="copyDemoScriptBtn" type="button">Copy demo script</button>
           <button id="copyChecklistBtn" type="button">Copy screenshot checklist</button>
           <button id="copySummaryBtn" type="button">Copy judge summary</button>
+          <button id="copyReportJsonBtn" type="button">Copy accessibility report JSON</button>
+          <button id="copyReportCsvBtn" type="button">Copy accessibility report CSV</button>
+          <button id="downloadManifestBtn" type="button">Download submission manifest</button>
+          <button id="copyManifestBtn" type="button">Copy submission manifest</button>
+          <button id="copyHandoffPacketBtn" type="button">Copy accessibility handoff packet</button>
+          <button id="copyHandoffPacketJsonBtn" type="button">Copy accessibility handoff JSON</button>
+          <button id="copyHandoffBundleBtn" type="button">Copy handoff bundle</button>
+          <button id="finalizeHandoffBtn" type="button">Finalize judge handoff</button>
           <button id="copyJudgeSnapshotBtn" type="button">Copy judge snapshot</button>
+          <button id="copyWorkflowSnapshotBtn" type="button">Copy judge workflow snapshot</button>
+          <button id="copyShareLinkBtn" type="button" title="Compress the full audit verdict into a link — score, findings, and remediation plan travel entirely in the URL fragment; no server, no upload, no screenshot">Copy shareable audit link</button>
+          <button id="showShareQrBtn" type="button" title="Render the shareable audit link as a QR code encoded entirely on-device — scan it with a phone camera and the full verdict opens there with zero upload">Show QR share code</button>
         </div>
         <p id="demoCopyStatus" class="muted" role="status" aria-live="polite"></p>
+        <div id="shareQrCard" class="share-qr-card" hidden>
+          <div class="share-qr-head">
+            <h3>Scan to open this audit on a phone</h3>
+            <button id="hideShareQrBtn" type="button">Hide</button>
+          </div>
+          <canvas id="shareQrCanvas" role="img" aria-label="QR code containing the complete shareable audit link"></canvas>
+          <p id="shareQrMeta" class="muted" aria-live="polite"></p>
+          <div class="demo-actions">
+            <button id="downloadShareQrBtn" type="button">Download QR PNG</button>
+          </div>
+          <p class="muted">The whole verdict — score, findings, and remediation plan — is encoded in the QR modules themselves (built by ClearSight's own encoder, no library, no server). Anything that scans it decodes the audit locally.</p>
+        </div>
         <ul class="demo-list">
           <li>Load a demo image, then render all simulations.</li>
           <li>Scan every simulation card for accessibility impact.</li>
@@ -180,16 +951,29 @@
       <button id="previewModalBackdrop" class="preview-modal-backdrop" type="button" aria-label="Close preview modal" data-action="close"></button>
       <div class="preview-modal-content" role="dialog" aria-labelledby="previewModalTitle" aria-describedby="previewModalMeta" aria-modal="true" tabindex="-1">
         <header class="preview-modal-header">
-          <div>
+          <div class="preview-modal-title-wrap">
             <p id="previewModalTitle" class="preview-title">Simulation preview</p>
             <p id="previewModalMeta" class="preview-meta muted"></p>
+          </div>
+          <div class="preview-modal-nav" aria-live="polite">
+            <button id="previewModalPrevBtn" class="tiny-btn" type="button" aria-label="Previous simulation preview" disabled>Prev</button>
+            <span id="previewModalIndexLabel" class="preview-modal-index">0 / 0</span>
+            <button id="previewModalNextBtn" class="tiny-btn" type="button" aria-label="Next simulation preview" disabled>Next</button>
           </div>
           <button id="previewModalCloseBtn" class="tiny-btn" type="button">Close</button>
         </header>
         <div class="preview-modal-body">
-          <img id="previewModalImage" class="preview-modal-image" alt="Simulation preview image" />
+          <div class="preview-modal-compare">
+            <canvas id="previewModalCanvas" class="preview-modal-image" width="0" height="0" aria-label="Source and simulation preview comparison"></canvas>
+          </div>
+          <div class="preview-modal-compare-controls">
+            <label for="previewModalCompareSlider">Source-to-simulation blend</label>
+            <input id="previewModalCompareSlider" type="range" min="0" max="100" value="50" disabled />
+            <span id="previewModalCompareValue" class="sim-compare-value">50%</span>
+          </div>
         </div>
         <footer class="preview-modal-footer">
+          <button id="previewModalPlayBtn" class="tiny-btn" type="button" aria-pressed="false" disabled>Play slideshow</button>
           <button id="previewModalDownloadBtn" class="tiny-btn" type="button">Download this preview</button>
         </footer>
       </div>
